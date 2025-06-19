@@ -1,0 +1,45 @@
+# 编译产物
+*.exe
+*.test
+*.prof
+
+# 临时文件
+*.tmp
+*.swp
+
+# 日志文件
+*.log
+
+# 版本控制元数据
+.gitignore
+frontend/node_modules
+frontend/.idea
+frontend/.vscode
+frontend/dist
+
+# 构建制品
+bin/*
+dist/*
+vendor/*
+_output
+_plugins
+docs
+
+# 测试数据和覆盖率报告
+coverage.*
+test/*
+
+# 开发工具元数据
+*.vscode/
+.idea/
+
+# Docker相关
+Dockerfile
+.dockerignore
+
+# 其他
+README.md
+MINDMAP.md
+LICENSE
+*.db
+*.sqlite

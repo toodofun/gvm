@@ -1,0 +1,89 @@
+package view
+
+import (
+	"fmt"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+	"gvm/core"
+	"gvm/internal/log"
+	"os"
+	"os/user"
+	"runtime"
+	"strings"
+)
+
+func (a *Application) createHeader() tview.Primitive {
+	u, err := user.Current()
+	if err != nil {
+		u = &user.User{Name: "unknow"}
+	}
+
+	hn, err := os.Hostname()
+	if err != nil {
+		hn = "unknow"
+	}
+
+	type KV struct {
+		Key   string
+		Value string
+	}
+	descMap := []KV{
+		{Key: "[yellow]Ver.[-:-:-]", Value: core.Version},
+		{Key: "[yellow]Host[-:-:-]", Value: hn},
+		{Key: "[yellow]User[-:-:-]", Value: u.Name},
+		{Key: "[yellow]OS[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
+		{Key: "[yellow]Level[-:-:-]", Value: log.Logger.Level.String()},
+	}
+	desc := tview.NewTable().
+		SetBorders(false)
+	for i, kv := range descMap {
+		desc.SetCell(i, 0, tview.NewTableCell(kv.Key))
+		desc.SetCell(i, 1, tview.NewTableCell(kv.Value))
+	}
+
+	a.help = tview.NewFlex()
+
+	log.Logger.Debugf("logo width: %d", len(strings.Split(logo, "\n")[1])+2)
+
+	header := tview.NewFlex().
+		AddItem(desc, 38, 0, false).
+		AddItem(a.help, 0, 1, false).
+		AddItem(tview.NewTextView().SetText(logo).SetTextColor(tcell.ColorYellow), len(strings.Split(logo, "\n")[1])+2, 0, false)
+
+	return header
+}
+
+func (a *Application) readerHelp(kas *KeyActions) {
+	a.help.Clear()
+
+	go func() {
+		a.QueueUpdateDraw(func() {
+			allActions := NewKeyActions()
+			allActions.Merge(kas)
+			allActions.Merge(a.actions)
+
+			const maxPerColumn = 6
+			col := 0
+			row := 0
+			table := tview.NewTable()
+
+			allActions.Range(func(key tcell.Key, action KeyAction) {
+				if !action.Opts.Visible {
+					return
+				}
+
+				keyName := strings.ToLower(tcell.KeyNames[key])
+				table.SetCell(row, col*2, tview.NewTableCell(fmt.Sprintf("[skyblue]<%s>[-:-:-]", keyName)).SetMaxWidth(12))
+				table.SetCell(row, col*2+1, tview.NewTableCell(fmt.Sprintf("[gray]%s[-:-:-]", action.Description)).SetMaxWidth(28))
+
+				row++
+				if row >= maxPerColumn {
+					row = 0
+					col++
+				}
+			})
+
+			a.help.AddItem(table, 0, 1, false)
+		})
+	}()
+}

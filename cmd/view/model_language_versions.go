@@ -1,0 +1,178 @@
+package view
+
+import (
+	"fmt"
+	"github.com/duke-git/lancet/v2/slice"
+	"github.com/gdamore/tcell/v2"
+	"gvm/core"
+	"sort"
+	"strings"
+	"unicode"
+)
+
+type version struct {
+	*core.RemoteVersion
+	location    string
+	isInstalled bool
+	isDefault   bool
+}
+
+type LanguageVersions struct {
+	versions []*version
+	data     []*version
+	lang     core.Language
+
+	installed bool
+}
+
+func NewLanguageVersions() *LanguageVersions {
+	return &LanguageVersions{}
+}
+
+func (lv *LanguageVersions) GetData(lang core.Language) (*LanguageVersions, error) {
+	rvs, err := lang.ListRemoteVersions()
+	if err != nil {
+		rvs = []*core.RemoteVersion{}
+	}
+	sort.Slice(rvs, func(i, j int) bool {
+		return rvs[i].Version.GreaterThan(rvs[j].Version)
+	})
+	installedVersions, err := lang.ListInstalledVersions()
+	if err != nil {
+		return nil, err
+	}
+	installedVersionList := make(map[string]*core.InstalledVersion)
+	for _, iv := range installedVersions {
+		installedVersionList[iv.Version.String()] = iv
+	}
+	current := lang.GetDefaultVersion()
+
+	versions := make([]*version, 0)
+
+	if len(rvs) > 0 {
+		for _, rv := range rvs {
+			if iv, ok := installedVersionList[rv.Version.String()]; ok {
+				versions = append(versions, &version{
+					RemoteVersion: rv,
+					isInstalled:   ok,
+					isDefault:     current.Version.Equal(rv.Version),
+					location:      iv.Location,
+				})
+			} else {
+				versions = append(versions, &version{
+					RemoteVersion: rv,
+					isInstalled:   ok,
+					isDefault:     current.Version.Equal(rv.Version),
+					location:      "",
+				})
+			}
+		}
+	} else {
+		for _, iv := range installedVersionList {
+			versions = append(versions, &version{
+				RemoteVersion: &core.RemoteVersion{
+					Version: iv.Version,
+					Origin:  iv.Origin,
+				},
+				isInstalled: true,
+				isDefault:   current.Version.Equal(iv.Version),
+				location:    iv.Location,
+			})
+		}
+	}
+
+	return &LanguageVersions{
+		versions:  versions,
+		data:      versions,
+		installed: false,
+		lang:      lang,
+	}, nil
+}
+func Capitalize(s string) string {
+	if s == "" {
+		return ""
+	}
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}
+func (lv *LanguageVersions) Title() string {
+	if lv.lang == nil {
+		return fmt.Sprintf("Versions")
+	}
+	return fmt.Sprintf("%s Versions", Capitalize(lv.lang.Name()))
+}
+
+func (lv *LanguageVersions) RowCount() int {
+	return len(lv.data)
+}
+
+func (lv *LanguageVersions) Headers() []*TableHeader {
+	return []*TableHeader{
+		{
+			Title:      "Version",
+			FixedWidth: 20,
+		},
+		{
+			Title:     "Comment",
+			Expansion: 1,
+		},
+		{
+			Title:     "Location",
+			Expansion: 1,
+		},
+		{
+			Title: "Installed",
+			Hide:  true,
+		},
+	}
+}
+
+func (lv *LanguageVersions) Rows() [][]string {
+	res := make([][]string, 0)
+
+	for _, v := range lv.data {
+		vs := v.Version.String()
+		if v.isDefault {
+			vs = "*" + vs
+		}
+		isInstalled := "false"
+		if v.isInstalled {
+			isInstalled = "true"
+		}
+		res = append(res, []string{vs, v.Comment, v.location, isInstalled})
+	}
+
+	return res
+}
+
+func (lv *LanguageVersions) GetRow(i []string) interface{} {
+	for _, v := range lv.versions {
+		if v.Version.String() == strings.TrimPrefix(i[0], "*") {
+			return v
+		}
+	}
+	return &version{}
+}
+
+func (lv *LanguageVersions) Filter(k, v string) {
+	switch k {
+	case "installed":
+		lv.installed = !lv.installed
+		lv.data = slice.Filter(lv.versions, func(index int, item *version) bool {
+			if lv.installed {
+				return item.isInstalled
+			} else {
+				return true
+			}
+		})
+	}
+}
+
+func (lv *LanguageVersions) GetRowColor(i []string) tcell.Color {
+	if i[3] == "true" {
+		return tcell.ColorGreen
+	} else {
+		return tcell.ColorSkyblue
+	}
+}

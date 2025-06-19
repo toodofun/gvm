@@ -1,0 +1,154 @@
+package view
+
+import (
+	"fmt"
+	"github.com/gdamore/tcell/v2"
+	"github.com/google/uuid"
+	"gvm/core"
+	"gvm/internal/log"
+	"gvm/languages/golang"
+)
+
+type PageLanguageVersions struct {
+	*SearchTable
+	languageVersions *LanguageVersions
+
+	app *Application
+}
+
+func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
+	lv := NewLanguageVersions()
+	return &PageLanguageVersions{
+		SearchTable:      NewSearchTable(lv, app),
+		languageVersions: lv,
+		app:              app,
+	}
+}
+
+func (p *PageLanguageVersions) Init() {
+	if p.app.lang == nil {
+		p.app.lang = &golang.Golang{}
+	}
+	p.SetModel(&LanguageVersions{lang: p.app.lang})
+	p.Render()
+	p.BindKeys(KeyMap{
+		KeyI: NewKeyAction("Filter by installed", func(evt *tcell.EventKey) *tcell.EventKey {
+			model := p.GetModel()
+			model.Filter("installed", "")
+			p.SetModel(model)
+			p.Render()
+			return evt
+		}, true),
+		tcell.KeyESC: NewKeyAction("Back", func(evt *tcell.EventKey) *tcell.EventKey {
+			p.app.SwitchPage(pageLanguages)
+			return evt
+		}, true),
+		tcell.KeyEnter: NewKeyAction("Install/Set as default", func(evt *tcell.EventKey) *tcell.EventKey {
+			v := p.GetSelection().(*version)
+			if v.isInstalled {
+				p.app.Confirm(fmt.Sprintf("Are you sure you want to set %s as default", v.Version.String()), func() {
+					if v.isDefault {
+						p.app.Alert(fmt.Sprintf("%s is already the default version", v.Version.String()), p.table)
+					} else {
+						p.doAsync(fmt.Sprintf("Set %s as default", v.Version.String()), func() (interface{}, error) {
+							return nil, p.app.lang.SetDefaultVersion(v.Version.String())
+						}, func(i interface{}) {
+							p.refresh()
+						}, func(err error) {
+							log.Logger.Errorf("Set %s as default error: %+v", v.Version.String(), err)
+							p.app.Alert(fmt.Sprintf("Set %s as default failed: %+v", v.Version.String(), err), p.table)
+						})
+					}
+				}, func() {
+					// nothing to do
+				})
+			} else {
+				installer := NewInstall(p.app, p.app.pages, p.app.lang, v.RemoteVersion, func(err error) {
+					if err == nil {
+						p.refresh()
+					}
+				})
+				installer.Install()
+			}
+			return evt
+		}, true),
+		tcell.KeyCtrlD: NewKeyAction("Uninstall", func(evt *tcell.EventKey) *tcell.EventKey {
+			v := p.GetSelection().(*version)
+			p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
+				p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
+					return nil, p.app.lang.Uninstall(v.Version.String())
+				}, func(i interface{}) {
+					p.refresh()
+				}, func(err error) {
+					p.app.Alert(fmt.Sprintf("Uninstall failed: %+v", err), p.table)
+				})
+			}, func() {
+				// nothing to do
+			})
+			return evt
+		}, true),
+	})
+
+	p.refresh()
+}
+
+func (p *PageLanguageVersions) refresh() {
+	p.loadLanguageVersionsAsync(p.app.lang,
+		func(tabular Tabular) {
+			data := tabular
+			p.SetModel(data)
+			p.Render()
+		}, func(err error) {
+			p.app.Alert(fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()), p.table)
+		})
+}
+
+func (p *PageLanguageVersions) GetKeyActions() *KeyActions {
+	return p.actions
+}
+
+func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}, error), onSuccess func(interface{}), onError func(error)) {
+	loading := uuid.NewString()
+	p.app.ShowLoading(loadingMsg, loading)
+	go func() {
+		defer func() {
+			p.app.QueueUpdateDraw(func() {
+				p.app.HideLoading(loading)
+			})
+		}()
+
+		data, err := do()
+
+		p.app.QueueUpdateDraw(func() {
+			if err != nil {
+				onError(err)
+			} else {
+				onSuccess(data)
+			}
+		})
+
+	}()
+}
+
+func (p *PageLanguageVersions) loadLanguageVersionsAsync(lang core.Language, onSuccess func(versions Tabular), onError func(error)) {
+	loading := uuid.NewString()
+	p.app.ShowLoading(fmt.Sprintf("Loading %s version info", lang.Name()), loading)
+
+	go func() {
+		defer func() {
+			p.app.QueueUpdateDraw(func() {
+				p.app.HideLoading(loading)
+			})
+		}()
+
+		versions, err := p.languageVersions.GetData(lang)
+
+		p.app.QueueUpdateDraw(func() {
+			if err != nil {
+				onError(err)
+			} else {
+				onSuccess(versions)
+			}
+		})
+	}()
+}
