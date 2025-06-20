@@ -67,6 +67,11 @@ If you have an issue: report it on the [issue tracker](https://github.com/toodof
 
 Contributions are always welcome. For more information, check out the [contributing guide](CONTRIBUTING.md)
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=toodofun/gvm&type=Date)](https://star-history.com/#toodofun/gvm)
+
 ## License
 
-Licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+
