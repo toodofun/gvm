@@ -25,7 +25,7 @@ func (a *Application) Confirm(msg string, onConfirm, onCancel func()) {
 	modal := tview.NewModal()
 	modal.Box.SetBackgroundColor(tcell.ColorBlack)
 	modal.SetBackgroundColor(tcell.ColorBlack)
-	modal.SetText(fmt.Sprintf("%s", msg))
+	modal.SetText(msg)
 	modal.SetTextColor(tcell.ColorBlue)
 	modal.SetBorder(true).
 		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< confirm >")).
@@ -90,24 +90,39 @@ func (a *Application) ShowLoading(message string, name string) {
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				// 检查模态框是否还存在
-				if a.pages.HasPage(name) {
-					a.QueueUpdateDraw(func() {
-						if a.pages.HasPage(name) {
-							spinner := spinners[spinnerIndex%len(spinners)]
-							modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
-							spinnerIndex++
-						}
-					})
-				} else {
-					return // 退出动画循环
-				}
+		for range ticker.C {
+			if !a.pages.HasPage(name) {
+				// 页面已关闭，退出
+				break
 			}
+
+			a.QueueUpdateDraw(func() {
+				if a.pages.HasPage(name) {
+					spinner := spinners[spinnerIndex%len(spinners)]
+					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
+					spinnerIndex++
+				}
+			})
 		}
+
+		//for {
+		//	// nolint:staticcheck
+		//	select {
+		//	case <-ticker.C:
+		//		// 检查模态框是否还存在
+		//		if a.pages.HasPage(name) {
+		//			a.QueueUpdateDraw(func() {
+		//				if a.pages.HasPage(name) {
+		//					spinner := spinners[spinnerIndex%len(spinners)]
+		//					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
+		//					spinnerIndex++
+		//				}
+		//			})
+		//		} else {
+		//			return // 退出动画循环
+		//		}
+		//	}
+		//}
 	}()
 
 	a.pages.AddPage(name, modal, false, true)

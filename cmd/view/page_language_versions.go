@@ -140,7 +140,6 @@ func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}
 				onSuccess(data)
 			}
 		})
-
 	}()
 }
 

@@ -18,6 +18,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"gvm/internal/log"
 	"io"
@@ -52,7 +53,7 @@ func UnTarGz(tarGzName string, dest string) error {
 
 	for {
 		hdr, err := tarStream.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

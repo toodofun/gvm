@@ -227,7 +227,7 @@ func (t *SearchTable) Render() {
 		if h.FixedWidth > 0 {
 			h.Title = FixedWidth(h.Title, h.FixedWidth)
 		}
-		cell := tview.NewTableCell(fmt.Sprintf("%s", h.Title)).
+		cell := tview.NewTableCell(h.Title).
 			SetExpansion(h.Expansion).
 			SetSelectable(false)
 

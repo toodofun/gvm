@@ -112,7 +112,7 @@ func Capitalize(s string) string {
 }
 func (lv *LanguageVersions) Title() string {
 	if lv.lang == nil {
-		return fmt.Sprintf("Versions")
+		return "Versions"
 	}
 	return fmt.Sprintf("%s Versions", Capitalize(lv.lang.Name()))
 }
@@ -144,7 +144,6 @@ func (lv *LanguageVersions) Headers() []*TableHeader {
 
 func (lv *LanguageVersions) Rows() [][]string {
 	res := make([][]string, 0)
-
 	for _, v := range lv.data {
 		vs := v.Version.String()
 		if v.isDefault {
@@ -156,7 +155,6 @@ func (lv *LanguageVersions) Rows() [][]string {
 		}
 		res = append(res, []string{vs, v.Comment, v.location, isInstalled})
 	}
-
 	return res
 }
 
