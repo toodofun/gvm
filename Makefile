@@ -21,6 +21,8 @@ all: build
 NAME ?= gvm
 OS_LIST = linux darwin windows
 ARCH_LIST = amd64 arm64
+SHELL := /bin/bash
+
 GO := go
 ROOT_DIR=.
 ROOT_PACKAGE=github.com/toodofun/gvm
@@ -44,7 +46,7 @@ ifeq ($(origin COVERAGE),undefined)
 # prod
 #COVERAGE := 60
 # develop
-COVERAGE := 10
+COVERAGE := 0.0
 endif
 
 include scripts/Makefile.tools.mk
@@ -67,7 +69,7 @@ lint: tools.verify.golangci-lint
 .PHONY: test
 test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
-	@set -o pipefail;$(GO) test ./ -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
+	@set -o pipefail;$(GO) test ./... -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
 		-timeout=10m -shuffle=on -short \
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 
