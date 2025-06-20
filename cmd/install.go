@@ -16,11 +16,12 @@ package cmd
 
 import (
 	"fmt"
-	vers "github.com/hashicorp/go-version"
-	"github.com/spf13/cobra"
 	"gvm/core"
 	"gvm/internal/common"
 	"gvm/internal/log"
+
+	vers "github.com/hashicorp/go-version"
+	"github.com/spf13/cobra"
 )
 
 func NewInstallCmd() *cobra.Command {

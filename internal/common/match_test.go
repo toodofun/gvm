@@ -15,9 +15,10 @@
 package common
 
 import (
-	"github.com/hashicorp/go-version"
 	"reflect"
 	"testing"
+
+	"github.com/hashicorp/go-version"
 )
 
 func TestMatchVersion(t *testing.T) {

@@ -15,9 +15,10 @@
 package view
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"sort"
 	"sync"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type (

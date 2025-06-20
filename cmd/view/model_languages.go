@@ -15,8 +15,9 @@
 package view
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"gvm/core"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type Languages struct {

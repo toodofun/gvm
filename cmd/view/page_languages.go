@@ -16,8 +16,9 @@ package view
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell/v2"
 	"gvm/core"
+
+	"github.com/gdamore/tcell/v2"
 )
 
 type PageLanguages struct {

@@ -16,9 +16,10 @@ package cmd
 
 import (
 	"fmt"
+	"gvm/core"
+
 	goversion "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"
-	"gvm/core"
 )
 
 func NewCurrentCmd() *cobra.Command {

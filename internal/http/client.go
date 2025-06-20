@@ -16,8 +16,6 @@ package http
 
 import (
 	"fmt"
-	"github.com/patrickmn/go-cache"
-	"github.com/schollz/progressbar/v3"
 	"gvm/internal/log"
 	"io"
 	"net"
@@ -25,10 +23,13 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"resty.dev/v3"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/patrickmn/go-cache"
+	"github.com/schollz/progressbar/v3"
+	"resty.dev/v3"
 )
 
 const (

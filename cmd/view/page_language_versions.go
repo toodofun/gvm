@@ -16,11 +16,12 @@ package view
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/google/uuid"
 	"gvm/core"
 	"gvm/internal/log"
 	"gvm/languages/golang"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/google/uuid"
 )
 
 type PageLanguageVersions struct {
@@ -113,7 +114,10 @@ func (p *PageLanguageVersions) refresh() {
 			p.SetModel(data)
 			p.Render()
 		}, func(err error) {
-			p.app.Alert(fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()), p.table)
+			p.app.Alert(
+				fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()),
+				p.table,
+			)
 		})
 }
 
@@ -121,7 +125,12 @@ func (p *PageLanguageVersions) GetKeyActions() *KeyActions {
 	return p.actions
 }
 
-func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}, error), onSuccess func(interface{}), onError func(error)) {
+func (p *PageLanguageVersions) doAsync(
+	loadingMsg string,
+	do func() (interface{}, error),
+	onSuccess func(interface{}),
+	onError func(error),
+) {
 	loading := uuid.NewString()
 	p.app.ShowLoading(loadingMsg, loading)
 	go func() {
@@ -143,7 +152,11 @@ func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}
 	}()
 }
 
-func (p *PageLanguageVersions) loadLanguageVersionsAsync(lang core.Language, onSuccess func(versions Tabular), onError func(error)) {
+func (p *PageLanguageVersions) loadLanguageVersionsAsync(
+	lang core.Language,
+	onSuccess func(versions Tabular),
+	onError func(error),
+) {
 	loading := uuid.NewString()
 	p.app.ShowLoading(fmt.Sprintf("Loading %s version info", lang.Name()), loading)
 

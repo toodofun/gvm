@@ -16,13 +16,14 @@ package languages
 
 import (
 	"fmt"
-	goversion "github.com/hashicorp/go-version"
 	"gvm/core"
 	"gvm/internal/common"
 	"gvm/internal/log"
 	"os"
 	"path"
 	"path/filepath"
+
+	goversion "github.com/hashicorp/go-version"
 )
 
 // Language 默认方法

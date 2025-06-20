@@ -15,9 +15,10 @@
 package view
 
 import (
+	"gvm/core"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"gvm/core"
 )
 
 type Application struct {

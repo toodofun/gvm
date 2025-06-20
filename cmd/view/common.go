@@ -16,9 +16,10 @@ package view
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"time"
 )
 
 func (a *Application) Confirm(msg string, onConfirm, onCancel func()) {
@@ -114,7 +115,7 @@ func (a *Application) ShowLoading(message string, name string) {
 		//			a.QueueUpdateDraw(func() {
 		//				if a.pages.HasPage(name) {
 		//					spinner := spinners[spinnerIndex%len(spinners)]
-		//					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
+		// 					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
 		//					spinnerIndex++
 		//				}
 		//			})

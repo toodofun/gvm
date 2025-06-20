@@ -17,7 +17,6 @@ package golang
 import (
 	"encoding/json"
 	"fmt"
-	goversion "github.com/hashicorp/go-version"
 	"gvm/core"
 	"gvm/internal/common"
 	"gvm/internal/http"
@@ -26,6 +25,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+
+	goversion "github.com/hashicorp/go-version"
 )
 
 const (
@@ -133,7 +134,13 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 		return err
 	}
 	if runtime.GOOS == "darwin" && code == 404 {
-		log.Logger.Infof("Version %s not found for %s/%s, trying %s/amd64", version.Version.String(), runtime.GOOS, runtime.GOARCH, runtime.GOOS)
+		log.Logger.Infof(
+			"Version %s not found for %s/%s, trying %s/amd64",
+			version.Version.String(),
+			runtime.GOOS,
+			runtime.GOARCH,
+			runtime.GOOS,
+		)
 		// macOS 上的版本可能需要特殊处理
 		url = fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, "amd64")
 		head, code, err = http.Default().Head(url)
@@ -147,7 +154,8 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 	}
 
 	log.Logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
-	file, err := http.Default().Download(url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
+	file, err := http.Default().
+		Download(url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	log.Logger.Print("\n")
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
@@ -165,7 +173,11 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 		}
 	}
 
-	log.Logger.Infof("Version %s was successfully installed in %s", version.Version.String(), path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"))
+	log.Logger.Infof(
+		"Version %s was successfully installed in %s",
+		version.Version.String(),
+		path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
+	)
 	return nil
 }
 

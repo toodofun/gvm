@@ -16,10 +16,11 @@ package view
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"strings"
 )
 
 type SearchTable struct {
@@ -178,7 +179,14 @@ func (t *SearchTable) init() {
 func (t *SearchTable) setTitle() {
 	// 设置标题
 	if len(t.condition) > 0 {
-		t.table.SetTitle(fmt.Sprintf(" [aqua::b]%s[-:-:-] [skyblue][%d][-] </%s> ", t.model.Title(), t.model.RowCount(), t.condition))
+		t.table.SetTitle(
+			fmt.Sprintf(
+				" [aqua::b]%s[-:-:-] [skyblue][%d][-] </%s> ",
+				t.model.Title(),
+				t.model.RowCount(),
+				t.condition,
+			),
+		)
 	} else {
 		t.table.SetTitle(fmt.Sprintf(" [aqua::b]%s[-:-:-] [skyblue][%d][-] ", t.model.Title(), t.model.RowCount()))
 	}

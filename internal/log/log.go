@@ -15,13 +15,14 @@
 package log
 
 import (
-	"github.com/sirupsen/logrus"
 	"gvm/core"
 	"io"
 	"os"
 	"path"
 	"strings"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (

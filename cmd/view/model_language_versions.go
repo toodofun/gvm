@@ -16,12 +16,13 @@ package view
 
 import (
 	"fmt"
-	"github.com/duke-git/lancet/v2/slice"
-	"github.com/gdamore/tcell/v2"
 	"gvm/core"
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/duke-git/lancet/v2/slice"
+	"github.com/gdamore/tcell/v2"
 )
 
 type version struct {

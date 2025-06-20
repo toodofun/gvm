@@ -16,9 +16,10 @@ package common
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/hashicorp/go-version"
 	"github.com/sirupsen/logrus"
-	"sort"
 )
 
 const (

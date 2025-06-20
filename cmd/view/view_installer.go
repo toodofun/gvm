@@ -16,11 +16,12 @@ package view
 
 import (
 	"fmt"
+	"gvm/core"
+	"gvm/internal/log"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
-	"gvm/core"
-	"gvm/internal/log"
 )
 
 type Installer struct {
@@ -43,7 +44,13 @@ func (i *Installer) show() {
 	}()
 }
 
-func NewInstall(app *Application, pages *tview.Pages, lang core.Language, version *core.RemoteVersion, callback func(err error)) *Installer {
+func NewInstall(
+	app *Application,
+	pages *tview.Pages,
+	lang core.Language,
+	version *core.RemoteVersion,
+	callback func(err error),
+) *Installer {
 	installer := &Installer{
 		Modal:    tview.NewModal(),
 		app:      app,

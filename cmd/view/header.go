@@ -16,14 +16,15 @@ package view
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
 	"gvm/core"
 	"gvm/internal/log"
 	"os"
 	"os/user"
 	"runtime"
 	"strings"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 func (a *Application) createHeader() tview.Primitive {
@@ -87,8 +88,16 @@ func (a *Application) readerHelp(kas *KeyActions) {
 				}
 
 				keyName := strings.ToLower(tcell.KeyNames[key])
-				table.SetCell(row, col*2, tview.NewTableCell(fmt.Sprintf("[skyblue]<%s>[-:-:-]", keyName)).SetMaxWidth(12))
-				table.SetCell(row, col*2+1, tview.NewTableCell(fmt.Sprintf("[gray]%s[-:-:-]", action.Description)).SetMaxWidth(28))
+				table.SetCell(
+					row,
+					col*2,
+					tview.NewTableCell(fmt.Sprintf("[skyblue]<%s>[-:-:-]", keyName)).SetMaxWidth(12),
+				)
+				table.SetCell(
+					row,
+					col*2+1,
+					tview.NewTableCell(fmt.Sprintf("[gray]%s[-:-:-]", action.Description)).SetMaxWidth(28),
+				)
 
 				row++
 				if row >= maxPerColumn {
