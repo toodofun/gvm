@@ -1,6 +1,12 @@
 # GVM (Global Version Manager)
 A programming language version manager, like `nvm`, but extensible to support all programming languages.
 
+![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/go.yml/badge.svg)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/toodofun/gvm/blob/master/LICENSE)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/toodofun/gvm)](https://goreportcard.com/report/github.com/toodofun/gvm)
+[![Test Coverage](https://codecov.io/gh/toodofun/gvm/branch/master/graph/badge.svg)](https://codecov.io/gh/toodofun/gvm)
+
 * 🚀 Supported Interaction Methods
     * Command Line Interface (CLI)
         * `ls-remote <lang>`: List remote versions of a language
@@ -52,3 +58,20 @@ Use "gvm [command] --help" for more information about a command.
 
 ## Acknowledgements
 Grateful acknowledgement to [JetBrains](https://www.jetbrains.com/) for supporting this project through their Open Source License Program and providing exceptional development tools.
+
+## Issues
+
+If you have an issue: report it on the [issue tracker](https://github.com/toodofun/gvm/issues)
+
+## Contributing
+
+Contributions are always welcome. For more information, check out the [contributing guide](CONTRIBUTING.md)
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=toodofun/gvm&type=Date)](https://star-history.com/#toodofun/gvm)
+
+## License
+
+Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+

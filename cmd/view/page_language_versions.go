@@ -1,12 +1,27 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package view
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/google/uuid"
 	"gvm/core"
 	"gvm/internal/log"
 	"gvm/languages/golang"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/google/uuid"
 )
 
 type PageLanguageVersions struct {
@@ -99,7 +114,10 @@ func (p *PageLanguageVersions) refresh() {
 			p.SetModel(data)
 			p.Render()
 		}, func(err error) {
-			p.app.Alert(fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()), p.table)
+			p.app.Alert(
+				fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()),
+				p.table,
+			)
 		})
 }
 
@@ -107,7 +125,12 @@ func (p *PageLanguageVersions) GetKeyActions() *KeyActions {
 	return p.actions
 }
 
-func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}, error), onSuccess func(interface{}), onError func(error)) {
+func (p *PageLanguageVersions) doAsync(
+	loadingMsg string,
+	do func() (interface{}, error),
+	onSuccess func(interface{}),
+	onError func(error),
+) {
 	loading := uuid.NewString()
 	p.app.ShowLoading(loadingMsg, loading)
 	go func() {
@@ -126,11 +149,14 @@ func (p *PageLanguageVersions) doAsync(loadingMsg string, do func() (interface{}
 				onSuccess(data)
 			}
 		})
-
 	}()
 }
 
-func (p *PageLanguageVersions) loadLanguageVersionsAsync(lang core.Language, onSuccess func(versions Tabular), onError func(error)) {
+func (p *PageLanguageVersions) loadLanguageVersionsAsync(
+	lang core.Language,
+	onSuccess func(versions Tabular),
+	onError func(error),
+) {
 	loading := uuid.NewString()
 	p.app.ShowLoading(fmt.Sprintf("Loading %s version info", lang.Name()), loading)
 

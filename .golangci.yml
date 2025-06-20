@@ -1,0 +1,78 @@
+# Copyright 2025 The Toodofun Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http:www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# This file contains all available configuration options
+# with their default values.
+
+# Options for analysis running
+run:
+  concurrency: 4
+  timeout: 10m
+  issues-exit-code: 1
+  tests: true
+
+# Output configuration options
+output:
+  formats:
+    - format: line-number
+
+# All available settings of specific linters
+linters-settings:
+  misspell:
+    locale: US
+    ignore-words:
+      - noteable
+  revive:
+    enable-all-rules: false
+    rules:
+      - name: deep-exit
+
+linters:
+  enable:
+    - asciicheck
+    - dogsled
+    - errorlint
+    - copyloopvar
+    - goconst
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nolintlint
+    - revive
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unused
+    - whitespace
+  disable:
+    - errcheck
+  disable-all: false
+  fast: false
+
+issues:
+  # List of regexps of issue texts to exclude.
+  exclude:
+    - "^.*, make it a constant$"
+  exclude-dirs:
+    - "e2e"
+    - "examples"
+    - "creation"
+  # Maximum issues count per one linter (set to 0 to disable)
+  max-issues-per-linter: 0
+
+  # Maximum count of issues with the same text (set to 0 to disable)
+  max-same-issues: 0

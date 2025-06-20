@@ -1,14 +1,29 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package languages
 
 import (
 	"fmt"
-	goversion "github.com/hashicorp/go-version"
 	"gvm/core"
 	"gvm/internal/common"
 	"gvm/internal/log"
 	"os"
 	"path"
 	"path/filepath"
+
+	goversion "github.com/hashicorp/go-version"
 )
 
 // Language 默认方法
@@ -45,7 +60,7 @@ func (l *Language) SetDefaultVersion(version string) error {
 	}
 
 	if err = pathManager.AddIfNotExists(path.Join(target, "go", "bin"), common.PositionPrepend); err != nil {
-		return fmt.Errorf("add to path error: %v", err)
+		return fmt.Errorf("add to path error: %w", err)
 	}
 
 	if !common.IsPathExist(source) {

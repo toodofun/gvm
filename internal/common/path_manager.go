@@ -1,16 +1,28 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //go:build !windows
+// +build !windows
 
 package common
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
-	"syscall"
 )
 
 // PathManager PATH 环境变量管理器
@@ -49,21 +61,17 @@ func NewPathManager() (*PathManager, error) {
 	}
 
 	// 设置路径分隔符
-	if runtime.GOOS == "windows" {
-		pm.pathSeparator = ";"
-	} else {
-		pm.pathSeparator = ":"
-	}
+	pm.pathSeparator = ":"
 
-	if runtime.GOOS == "windows" {
-		// Windows 使用注册表，不需要检测 shell
-		return pm, nil
-	}
+	//if runtime.GOOS == "windows" {
+	//	// Windows 使用注册表，不需要检测 shell
+	//	return pm, nil
+	//}
 
 	// 检测当前使用的 shell
 	shell, err := pm.detectShell()
 	if err != nil {
-		return nil, fmt.Errorf("无法检测 shell 类型: %v", err)
+		return nil, fmt.Errorf("无法检测 shell 类型: %w", err)
 	}
 
 	pm.shellType = shell
@@ -129,51 +137,7 @@ func (pm *PathManager) getConfigFile() string {
 
 // getCurrentPATH 获取当前实际的PATH值
 func (pm *PathManager) getCurrentPATH() string {
-	if runtime.GOOS == "windows" {
-		return pm.getWindowsPATH()
-	}
 	return pm.getUnixPATH()
-}
-
-// getWindowsPATH 获取Windows系统的PATH
-func (pm *PathManager) getWindowsPATH() string {
-	// 先尝试从注册表获取用户PATH
-	userPath := pm.getUserPathFromRegistry()
-
-	// 如果用户PATH不为空，使用用户PATH
-	if userPath != "" {
-		return userPath
-	}
-
-	// 否则回退到环境变量
-	return os.Getenv("PATH")
-}
-
-// getUserPathFromRegistry 从注册表获取用户PATH
-func (pm *PathManager) getUserPathFromRegistry() string {
-	cmd := exec.Command("reg", "query", "HKCU\\Environment", "/v", "PATH")
-	cmd.SysProcAttr = &syscall.SysProcAttr{} // Windows下隐藏命令行窗口
-
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-
-	return pm.parseWindowsRegOutput(string(output))
-}
-
-// parseWindowsRegOutput 解析Windows注册表输出
-func (pm *PathManager) parseWindowsRegOutput(output string) string {
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "PATH") && strings.Contains(line, "REG_") {
-			parts := strings.Fields(line)
-			if len(parts) >= 3 {
-				return strings.Join(parts[2:], " ")
-			}
-		}
-	}
-	return ""
 }
 
 // getUnixPATH 获取Unix系统的PATH
@@ -385,18 +349,12 @@ func (pm *PathManager) Add(newPath string, position string) error {
 		return fmt.Errorf("无效的位置参数: %s，必须是 'append' 或 'prepend'", position)
 	}
 
-	var err error
-	if runtime.GOOS == "windows" {
-		err = pm.addWindows(newPath, position)
-	} else {
-		err = pm.addUnix(newPath, position)
+	if err := pm.addUnix(newPath, position); err != nil {
+		return err
 	}
-
-	if err == nil {
-		pm.invalidateCache() // 添加成功后使缓存失效
-	}
-
-	return err
+	// 添加成功后使缓存失效
+	pm.invalidateCache()
+	return nil
 }
 
 // AddIfNotExists 如果路径不存在则添加到 PATH
@@ -413,18 +371,13 @@ func (pm *PathManager) Remove(targetPath string) error {
 		return fmt.Errorf("路径 '%s' 不存在于 PATH 中", targetPath)
 	}
 
-	var err error
-	if runtime.GOOS == "windows" {
-		err = pm.removeWindows(targetPath)
-	} else {
-		err = pm.removeUnix(targetPath)
+	if err := pm.removeUnix(targetPath); err != nil {
+		return err
 	}
+	// 删除成功后使缓存失效
+	pm.invalidateCache()
 
-	if err == nil {
-		pm.invalidateCache() // 删除成功后使缓存失效
-	}
-
-	return err
+	return nil
 }
 
 // RemoveIfExists 如果路径存在则从 PATH 中移除
@@ -608,59 +561,7 @@ func (pm *PathManager) normalizePath(path string) string {
 	// 清理路径
 	path = filepath.Clean(path)
 
-	// Windows 下转换为小写以进行大小写不敏感的比较
-	if runtime.GOOS == "windows" {
-		path = strings.ToLower(path)
-	}
-
 	return path
-}
-
-// addWindows 在 Windows 上添加路径到 PATH
-func (pm *PathManager) addWindows(newPath, position string) error {
-	// 获取当前用户的 PATH
-	currentPath := pm.getUserPathFromRegistry()
-
-	var newPathValue string
-	if position == PositionPrepend {
-		if currentPath != "" {
-			newPathValue = newPath + pm.pathSeparator + currentPath
-		} else {
-			newPathValue = newPath
-		}
-	} else {
-		if currentPath != "" {
-			newPathValue = currentPath + pm.pathSeparator + newPath
-		} else {
-			newPathValue = newPath
-		}
-	}
-
-	return pm.setWindowsPATH(newPathValue)
-}
-
-// setWindowsPATH 设置 Windows PATH
-func (pm *PathManager) setWindowsPATH(pathValue string) error {
-	cmd := exec.Command("setx", "PATH", pathValue)
-	cmd.SysProcAttr = &syscall.SysProcAttr{}
-	return cmd.Run()
-}
-
-// removeWindows 在 Windows 上从 PATH 移除路径
-func (pm *PathManager) removeWindows(targetPath string) error {
-	// 获取当前路径列表
-	paths := pm.GetPathStrings()
-	targetPath = pm.normalizePath(targetPath)
-
-	var newPaths []string
-	for _, path := range paths {
-		if pm.normalizePath(path) != targetPath {
-			newPaths = append(newPaths, path)
-		}
-	}
-
-	newPathValue := strings.Join(newPaths, pm.pathSeparator)
-	return pm.setWindowsPATH(newPathValue)
 }
 
 // addUnix 在 Unix 系统上添加路径到 PATH
@@ -732,10 +633,6 @@ func (pm *PathManager) removeUnix(targetPath string) error {
 
 // setPATH 直接设置整个 PATH 值
 func (pm *PathManager) setPATH(pathValue string) error {
-	if runtime.GOOS == "windows" {
-		return pm.setWindowsPATH(pathValue)
-	}
-
 	// Unix 系统：这里需要更复杂的逻辑来替换现有的 PATH 设置
 	// 为简化，我们先删除所有现有的 PATH 设置，然后添加新的
 	pm.removeAllPathExports()
