@@ -53,7 +53,7 @@ Use "gvm [command] --help" for more information about a command.
 - Cross-platform support, with Docker images and binary releases
 - Extensible architecture—easy to add support for new languages
 
-## 🤘&nbsp; Supported Programming Languages
+## 🐍&nbsp; Supported Programming Languages
 - [x] Golang
 - [ ] Node
 - [ ] Java

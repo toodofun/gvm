@@ -10,11 +10,11 @@
 [![Test Coverage](https://codecov.io/gh/toodofun/gvm/branch/master/graph/badge.svg)](https://codecov.io/gh/toodofun/gvm)
 
 <p align="center">
-	<a href="#-installation">安装</a> ❘
-	<a href="#-features">特性</a> ❘
-	<a href="#-supported-programming-languages">支持的语言</a> ❘
-	<a href="#-quick-start">快速开始</a> ❘
-	<a href="#-license">许可证</a>
+	<a href="#-安装">安装</a> ❘
+	<a href="#-特性">特性</a> ❘
+	<a href="#-支持的编程语言">支持的语言</a> ❘
+	<a href="#-快速开始">快速开始</a> ❘
+	<a href="#-许可证">许可证</a>
 </p>
 
 > [English](README.md) | 简体中文
@@ -53,7 +53,7 @@ Use "gvm [command] --help" for more information about a command.
 - 跨平台支持，提供 Docker 镜像和二进制包
 - 架构可扩展，便于添加新语言支持
 
-## 🤘&nbsp; 支持的编程语言
+## 🐍&nbsp; 支持的编程语言
 - [x] Golang
 - [ ] Node
 - [ ] Java
