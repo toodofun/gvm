@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2025 The Toodofun Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,18 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.1-alpine3.21 AS builder
-WORKDIR /build
 
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories && \
-    apk add --no-cache ca-certificates gcc libtool make musl-dev protoc git bash && \
-    go env -w GOPROXY=https://goproxy.cn,direct
+# http://stackoverflow.com/a/21142256/2055281
 
-COPY go.mod go.sum ./
-RUN go mod download
+echo "mode: atomic" > coverage.txt
 
-COPY . .
-RUN make all
+for d in $(find ./* -maxdepth 10 -type d); do
+    if ls $d/*.go &> /dev/null; then
+        go test  -coverprofile=profile.out -covermode=atomic $d
+        if [ -f profile.out ]; then
+            cat profile.out | grep -v "mode: " >> /tmp/coverage.txt
+            rm profile.out
+        fi
+    fi
+done
 
-FROM scratch
-COPY --from=builder /build/bin /
+echo "coverage output: /tmp/coverage.txt"
