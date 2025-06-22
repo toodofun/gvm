@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	core2 "gvm/internal/core"
 	"gvm/internal/utils/color"
@@ -38,7 +37,7 @@ func NewLsRemoteCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
-			ctx := context.Background()
+			ctx := cmd.Context()
 
 			language, exists := core2.GetLanguage(lang)
 			if !exists {

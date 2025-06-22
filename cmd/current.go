@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"gvm/internal/core"
 
@@ -35,7 +34,7 @@ func NewCurrentCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
-			ctx := context.Background()
+			ctx := cmd.Context()
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {

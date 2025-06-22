@@ -17,7 +17,6 @@ package cmd
 import (
 	"fmt"
 	"gvm/internal/core"
-	"gvm/internal/log"
 
 	"github.com/spf13/cobra"
 )
@@ -35,8 +34,6 @@ func NewUseCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
 			version := args[1]
-
-			_ = log.GetWriter(cmd.Context())
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {
