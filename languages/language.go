@@ -18,11 +18,10 @@ import (
 	"context"
 	"fmt"
 	"gvm/internal/core"
-	path2 "gvm/internal/env"
+	"gvm/internal/env"
 	"gvm/internal/log"
-	path3 "gvm/internal/utils/path"
+	"gvm/internal/utils/path"
 	"os"
-	"path"
 	"path/filepath"
 
 	goversion "github.com/hashicorp/go-version"
@@ -52,31 +51,31 @@ func (l *Language) SetDefaultVersion(ctx context.Context, version string) error 
 		return fmt.Errorf("version %s not installed", version)
 	}
 
-	source := path.Join(path3.GetLangRoot(l.lang.Name()), version)
-	target := path.Join(path3.GetLangRoot(l.lang.Name()), path3.Current)
+	source := filepath.Join(path.GetLangRoot(l.lang.Name()), version)
+	target := filepath.Join(path.GetLangRoot(l.lang.Name()), path.Current)
 
 	// 检查是否加入了环境变量
-	pathManager, err := path2.NewPathManager()
+	pathManager, err := env.NewPathManager()
 	if err != nil {
 		return fmt.Errorf("get path manager error: %w", err)
 	}
 
-	if err = pathManager.AddIfNotExists(path.Join(target, "go", "bin"), path2.PositionPrepend); err != nil {
+	if err = pathManager.AddIfNotExists(filepath.Join(target, "go", "bin"), env.PositionPrepend); err != nil {
 		return fmt.Errorf("add to path error: %w", err)
 	}
 
-	if !path3.IsPathExist(source) {
+	if !path.IsPathExist(source) {
 		return fmt.Errorf("%s is not installed", version)
 	}
 
-	return path3.SetSymlink(source, target)
+	return path.SetSymlink(source, target)
 }
 
 func (l *Language) GetDefaultVersion() *core.InstalledVersion {
 	defaultVersion := &core.InstalledVersion{
 		Version: goversion.Must(goversion.NewVersion("0.0.0")),
 	}
-	target := path.Join(path3.GetLangRoot(l.lang.Name()), path3.Current)
+	target := filepath.Join(path.GetLangRoot(l.lang.Name()), path.Current)
 	absTarget, err := os.Readlink(target)
 	if err != nil {
 		return defaultVersion
@@ -95,7 +94,7 @@ func (l *Language) GetDefaultVersion() *core.InstalledVersion {
 
 func (l *Language) ListInstalledVersions(ctx context.Context, binPath string) ([]*core.InstalledVersion, error) {
 	logger := log.GetLogger(ctx)
-	installedVersions, err := path3.GetInstalledVersion(l.lang.Name(), binPath)
+	installedVersions, err := path.GetInstalledVersion(l.lang.Name(), binPath)
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +109,13 @@ func (l *Language) ListInstalledVersions(ctx context.Context, binPath string) ([
 		res = append(res, &core.InstalledVersion{
 			Version:  version,
 			Origin:   installedVersion,
-			Location: path.Join(path3.GetLangRoot(l.lang.Name()), installedVersion),
+			Location: filepath.Join(path.GetLangRoot(l.lang.Name()), installedVersion),
 		})
 	}
 	return res, nil
 }
 
 func (l *Language) Uninstall(version string) error {
-	source := path.Join(path3.GetLangRoot(l.lang.Name()), version)
+	source := filepath.Join(path.GetLangRoot(l.lang.Name()), version)
 	return os.RemoveAll(source)
 }
