@@ -15,9 +15,8 @@
 package cmd
 
 import (
-	"gvm/cmd/view"
-
 	"github.com/spf13/cobra"
+	"gvm/internal/view"
 )
 
 func NewUICmd() *cobra.Command {
@@ -25,7 +24,7 @@ func NewUICmd() *cobra.Command {
 		Use:   "ui",
 		Short: "Run in the terminal UI",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication().Run()
+			return view.CreateApplication(cmd.Context()).Run()
 		},
 	}
 }

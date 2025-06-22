@@ -15,8 +15,9 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 
 	goversion "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"
@@ -34,13 +35,14 @@ func NewCurrentCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
+			ctx := context.Background()
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
 
-			v := language.GetDefaultVersion()
+			v := language.GetDefaultVersion(ctx)
 			if v.Version.Equal(goversion.Must(goversion.NewVersion("0.0.0"))) {
 				fmt.Println("not set")
 			} else {

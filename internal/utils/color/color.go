@@ -12,10 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package color
 
-func ReverseSlice[T any](arr []T) {
-	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
-		arr[i], arr[j] = arr[j], arr[i]
-	}
+import "github.com/fatih/color"
+
+var (
+	fgRed   = color.New(color.FgRed).SprintFunc()
+	fgGreen = color.New(color.FgGreen).SprintFunc()
+	fgBlue  = color.New(color.FgBlue).SprintFunc()
+)
+
+func RedFont(s string) string {
+	return fgRed(s)
+}
+
+func GreenFont(s string) string {
+	return fgGreen(s)
+}
+
+func BlueFont(s string) string {
+	return fgBlue(s)
 }

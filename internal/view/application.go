@@ -15,7 +15,8 @@
 package view
 
 import (
-	"gvm/core"
+	"context"
+	"gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -28,15 +29,19 @@ type Application struct {
 	lang    core.Language
 	pageMap map[string]Page
 	actions *KeyActions
+
+	ctx context.Context
 }
 
-func CreateApplication() *Application {
+func CreateApplication(ctx context.Context) *Application {
 	tview.Borders = Borders
 	app := tview.NewApplication()
 
 	return &Application{
 		Application: app,
 		actions:     NewKeyActions(),
+
+		ctx: ctx,
 	}
 }
 
@@ -59,7 +64,7 @@ func (a *Application) HasAction(key tcell.Key) (KeyAction, bool) {
 func (a *Application) SwitchPage(page string) {
 	p := a.pageMap[page]
 	a.pages.SwitchToPage(page)
-	p.Init()
+	p.Init(a.ctx)
 	a.readerHelp(p.GetKeyActions())
 }
 
@@ -110,7 +115,7 @@ func (a *Application) Run() error {
 	a.bindKeys()
 	// 创建主布局
 	root := tview.NewFlex().SetDirection(tview.FlexRow)
-	root.AddItem(a.createHeader(), 6, 0, false)
+	root.AddItem(a.createHeader(a.ctx), 6, 0, false)
 	root.AddItem(a.createMain(), 0, 1, true)
 
 	return a.SetRoot(root, true).EnableMouse(false).Run()

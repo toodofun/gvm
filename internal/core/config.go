@@ -14,25 +14,31 @@
 
 package core
 
-import "sort"
+import (
+	"os"
+	"path/filepath"
+)
 
-var languages = make(map[string]Language)
+const (
+	defaultHomeDir = "/opt"
+	defaultDir     = ".gvm"
 
-func RegisterLanguage(lang Language) {
-	languages[lang.Name()] = lang
-}
+	ContextLogWriterKey ctxKey = "context.log.writer"
+)
 
-func GetLanguage(name string) (Language, bool) {
-	lang, exists := languages[name]
-	return lang, exists
-}
+var Version = "1.0.0-dev"
 
-func GetAllLanguage() []string {
-	res := make([]string, 0)
+type ctxKey string
 
-	for k := range languages {
-		res = append(res, k)
+var GetRootDir = func() string {
+	home, err := os.UserConfigDir()
+	if err != nil {
+		home = defaultHomeDir
 	}
-	sort.Strings(res)
-	return res
+
+	rootDir := filepath.Join(home, defaultDir)
+	if err := os.MkdirAll(rootDir, 0755); err != nil {
+		panic("无法创建配置目录: " + err.Error())
+	}
+	return rootDir
 }

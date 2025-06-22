@@ -12,30 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package slice
 
-import (
-	"github.com/hashicorp/go-version"
-)
-
-type Language interface {
-	Name() string
-	ListRemoteVersions() ([]*RemoteVersion, error)
-	ListInstalledVersions() ([]*InstalledVersion, error)
-	SetDefaultVersion(version string) error
-	GetDefaultVersion() *InstalledVersion
-	Install(remoteVersion *RemoteVersion) error
-	Uninstall(version string) error
-}
-
-type RemoteVersion struct {
-	Version *version.Version
-	Origin  string
-	Comment string
-}
-
-type InstalledVersion struct {
-	Version  *version.Version
-	Origin   string
-	Location string
+func ReverseSlice[T any](arr []T) {
+	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
+		arr[i], arr[j] = arr[j], arr[i]
+	}
 }

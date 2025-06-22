@@ -15,6 +15,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"gvm/internal/log"
 	"io"
@@ -62,10 +63,7 @@ func Default() *Client {
 			SetTransport(transport).
 			SetRetryCount(3).
 			SetRetryWaitTime(2 * time.Second).
-			SetRetryMaxWaitTime(10 * time.Second).
-			AddRetryHooks(func(response *resty.Response, err error) {
-				log.Logger.Warnf("Retrying request to %s, attempt %d", response.Request.URL, response.Request.Attempt)
-			})
+			SetRetryMaxWaitTime(10 * time.Second)
 
 		client = &Client{
 			resty: c,
@@ -85,24 +83,25 @@ func (c *Client) makeCacheKey(rawURL string) (string, error) {
 	return parsed.String(), nil
 }
 
-func (c *Client) Get(url string) ([]byte, error) {
+func (c *Client) Get(ctx context.Context, url string) ([]byte, error) {
+	logger := log.GetLogger(ctx)
 	key, err := c.makeCacheKey(url)
 	if err != nil {
 		return nil, err
 	}
 	if val, found := c.cache.Get(key); found {
-		log.Logger.Debugf("[cache] hit: %s", key)
+		logger.Debugf("[cache] hit: %s", key)
 		return val.([]byte), nil
 	}
 
-	resp, err := c.resty.R().Get(url)
+	resp, err := c.resty.R().WithContext(ctx).Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Logger.Warnf("Close body error: %s", err)
+			logger.Warnf("Close body error: %s", err)
 		}
 	}(resp.Body)
 	if resp.IsError() {
@@ -117,8 +116,8 @@ func (c *Client) Get(url string) ([]byte, error) {
 	return res, nil
 }
 
-func (c *Client) Head(url string) (http.Header, int, error) {
-	resp, err := c.resty.R().Head(url)
+func (c *Client) Head(ctx context.Context, url string) (http.Header, int, error) {
+	resp, err := c.resty.R().WithContext(ctx).Head(url)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -128,7 +127,10 @@ func (c *Client) Head(url string) (http.Header, int, error) {
 	return resp.Header(), resp.StatusCode(), nil
 }
 
-func (c *Client) Download(url, destPath, filename string) (string, error) {
+func (c *Client) Download(ctx context.Context, url, destPath, filename string) (string, error) {
+	loggerWriter := log.GetWriter(ctx)
+	logger := log.GetLogger(ctx)
+
 	file := path.Join(destPath, filename)
 	if err := os.MkdirAll(path.Dir(file), os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create directory %s: %w", path.Dir(file), err)
@@ -154,6 +156,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 		SetRetryCount(2)
 
 	resp, err := checkClient.R().
+		WithContext(ctx).
 		SetHeader("Range", "bytes=0-1"). // 改为0-1，更标准
 		Head(url)
 
@@ -188,7 +191,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 	defer func(out *os.File) {
 		err := out.Close()
 		if err != nil {
-			log.Logger.Warnf("Failed to close file %s: %+v", file, err)
+			logger.Warnf("Failed to close file %s: %+v", file, err)
 		}
 	}(out)
 
@@ -198,6 +201,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 		SetRetryWaitTime(2 * time.Second)
 
 	request := downloadClient.R().
+		WithContext(ctx).
 		SetDoNotParseResponse(true)
 
 	if supportsRange && existingSize > 0 {
@@ -211,7 +215,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			log.Logger.Warnf("Failed to close response body: %+v", err)
+			logger.Warnf("Failed to close response body: %+v", err)
 		}
 	}(resp.RawResponse.Body)
 
@@ -223,7 +227,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 	case http.StatusRequestedRangeNotSatisfiable: // 416错误
 		// Range请求超出文件大小，说明文件已经完整下载
 		if existingSize > 0 {
-			log.Logger.Info("File already fully downloaded")
+			logger.Info("File already fully downloaded")
 			return file, nil
 		}
 		return "", fmt.Errorf("range not satisfiable: %d", resp.StatusCode())
@@ -240,7 +244,7 @@ func (c *Client) Download(url, destPath, filename string) (string, error) {
 	bar := progressbar.NewOptions64(
 		totalSize,
 		progressbar.OptionSetDescription("Downloading"),
-		progressbar.OptionSetWriter(log.Logger.Out),
+		progressbar.OptionSetWriter(loggerWriter),
 		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetWidth(30),
 		progressbar.OptionSetRenderBlankState(true),

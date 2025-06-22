@@ -12,16 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package view
+package core
 
-import (
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
-)
+import "sort"
 
-type Page interface {
-	tview.Primitive
-	Init()
-	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey) *tview.Box
-	GetKeyActions() *KeyActions
+var languages = make(map[string]Language)
+
+func RegisterLanguage(lang Language) {
+	languages[lang.Name()] = lang
+}
+
+var GetLanguage =func(name string) (Language, bool) {
+	lang, exists := languages[name]
+	return lang, exists
+}
+
+func GetAllLanguage() []string {
+	res := make([]string, 0)
+
+	for k := range languages {
+		res = append(res, k)
+	}
+	sort.Strings(res)
+	return res
 }

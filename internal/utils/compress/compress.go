@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package compress
 
 import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"gvm/internal/log"
@@ -27,12 +28,13 @@ import (
 	"strings"
 )
 
-func UnTarGz(tarGzName string, dest string) error {
+func UnTarGz(ctx context.Context, tarGzName string, dest string) error {
+	logger := log.GetLogger(ctx)
 	gzReader, err := os.Open(tarGzName)
 	defer func(gzReader *os.File) {
 		err := gzReader.Close()
 		if err != nil {
-			log.Logger.Warnf("Close body error: %s", err)
+			logger.Warnf("Close body error: %s", err)
 		}
 	}(gzReader)
 
@@ -62,13 +64,17 @@ func UnTarGz(tarGzName string, dest string) error {
 		fInfo := hdr.FileInfo()
 		fileName := hdr.Name
 		absFileName := filepath.Join(absPath, fileName)
-		log.Logger.Debugf("%s", absFileName)
+		logger.Debugf("%s", absFileName)
 
 		if fInfo.Mode().IsDir() {
 			if err := os.MkdirAll(absFileName, fInfo.Mode().Perm()); err != nil {
 				return err
 			}
 			continue
+		}
+		dir := filepath.Dir(absFileName)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
 		}
 		file, err := os.OpenFile(absFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fInfo.Mode().Perm())
 		if err != nil {
@@ -89,14 +95,15 @@ func UnTarGz(tarGzName string, dest string) error {
 	return nil
 }
 
-func UnZip(zipFile string, dest string) error {
+func UnZip(ctx context.Context, zipFile string, dest string) error {
+	logger := log.GetLogger(ctx)
 	reader, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if e := reader.Close(); e != nil {
-			log.Logger.Warnf("Close zip reader error: %s", e)
+			logger.Warnf("Close zip reader error: %s", e)
 		}
 	}()
 
@@ -107,7 +114,7 @@ func UnZip(zipFile string, dest string) error {
 
 	for _, f := range reader.File {
 		fpath := filepath.Join(absPath, f.Name)
-		log.Logger.Debugf("%s", fpath)
+		logger.Debugf("%s", fpath)
 
 		// 防止 Zip Slip 漏洞
 		if !strings.HasPrefix(fpath, absPath+string(os.PathSeparator)) {

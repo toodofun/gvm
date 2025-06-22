@@ -15,13 +15,14 @@
 package view
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
+	core2 "gvm/internal/core"
 	"gvm/internal/log"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
-	"github.com/sirupsen/logrus"
 )
 
 type Installer struct {
@@ -29,26 +30,19 @@ type Installer struct {
 	app      *Application
 	pages    *tview.Pages
 	buf      *log.NotifyBuffer
-	lang     core.Language
-	version  *core.RemoteVersion
+	lang     core2.Language
+	version  *core2.RemoteVersion
 	callback func(error)
-}
-
-func (i *Installer) show() {
-	go func() {
-		for range i.buf.Updated {
-			i.app.QueueUpdateDraw(func() {
-				i.SetText(i.buf.ReadAndReset())
-			})
-		}
-	}()
+	ticker   *time.Ticker
+	stopChan chan struct{}
+	lastText string
 }
 
 func NewInstall(
 	app *Application,
 	pages *tview.Pages,
-	lang core.Language,
-	version *core.RemoteVersion,
+	lang core2.Language,
+	version *core2.RemoteVersion,
 	callback func(err error),
 ) *Installer {
 	installer := &Installer{
@@ -59,6 +53,7 @@ func NewInstall(
 		buf:      log.NewNotifyBuffer(),
 		version:  version,
 		callback: callback,
+		stopChan: make(chan struct{}),
 	}
 
 	installer.SetBorder(true)
@@ -73,30 +68,61 @@ func NewInstall(
 	return installer
 }
 
+func (i *Installer) show() {
+	// 使用定时器控制更新频率，避免过于频繁的界面刷新
+	i.ticker = time.NewTicker(50 * time.Millisecond) // 50ms更新一次，保持流畅
+
+	go func() {
+		defer i.ticker.Stop()
+
+		for {
+			select {
+			case <-i.buf.Updated:
+				// 收到更新信号，等待下一次定时器触发
+				continue
+			case <-i.ticker.C:
+				// 检查是否有新内容需要更新
+				newText := i.buf.Read()
+				if newText != i.lastText && newText != "" {
+					i.lastText = newText
+					i.app.QueueUpdateDraw(func() {
+						i.SetText(newText)
+					})
+				}
+			case <-i.stopChan:
+				return
+			}
+		}
+	}()
+}
+
 func (i *Installer) write(msg string) {
 	i.buf.Write([]byte(msg))
 }
 
-type PlainFormatter struct{}
-
-func (f *PlainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	return []byte(entry.Message + "\n"), nil
-}
-
 func (i *Installer) Install() {
 	i.show()
-	log.SwitchTo(i.buf)
-	log.Logger.SetFormatter(&PlainFormatter{})
 
 	// 先添加页面
 	i.pages.AddPage(pageInstaller, i, false, true)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, core2.ContextLogWriterKey, i.buf)
 
 	go func() {
-		defer log.SwitchTo(log.Writer)
-		err := i.lang.Install(i.version)
+		defer func() {
+			close(i.stopChan) // 停止更新协程
+			i.buf.Close()     // 关闭缓冲区
+		}()
+
+		err := i.lang.Install(ctx, i.version)
 		if err != nil {
 			i.write("install failed: " + err.Error())
+		} else {
+			i.write("Installation completed successfully!")
 		}
+
+		// 等待一下确保最后的消息显示
+		time.Sleep(100 * time.Millisecond)
 
 		// 安装完成后设置按钮和事件处理
 		i.app.QueueUpdateDraw(func() {

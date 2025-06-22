@@ -15,8 +15,9 @@
 package view
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 	"gvm/internal/log"
 	"os"
 	"os/user"
@@ -27,7 +28,8 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (a *Application) createHeader() tview.Primitive {
+func (a *Application) createHeader(ctx context.Context) tview.Primitive {
+	logger := log.GetLogger(ctx)
 	u, err := user.Current()
 	if err != nil {
 		u = &user.User{Name: "unknow"}
@@ -47,7 +49,7 @@ func (a *Application) createHeader() tview.Primitive {
 		{Key: "[yellow]Host[-:-:-]", Value: hn},
 		{Key: "[yellow]User[-:-:-]", Value: u.Name},
 		{Key: "[yellow]OS[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
-		{Key: "[yellow]Level[-:-:-]", Value: log.Logger.Level.String()},
+		{Key: "[yellow]Level[-:-:-]", Value: log.GetLevel()},
 	}
 	desc := tview.NewTable().
 		SetBorders(false)
@@ -58,7 +60,7 @@ func (a *Application) createHeader() tview.Primitive {
 
 	a.help = tview.NewFlex()
 
-	log.Logger.Debugf("logo width: %d", len(strings.Split(logo, "\n")[1])+2)
+	logger.Debugf("logo width: %d", len(strings.Split(logo, "\n")[1])+2)
 
 	header := tview.NewFlex().
 		AddItem(desc, 38, 0, false).

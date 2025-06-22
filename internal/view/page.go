@@ -12,29 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package view
 
 import (
-	"os"
-	"path/filepath"
+	"context"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
-const (
-	defaultHomeDir = "/opt"
-	defaultDir     = ".gvm"
-)
-
-var Version = "1.0.0-dev"
-
-func GetRootDir() string {
-	home, err := os.UserConfigDir()
-	if err != nil {
-		home = defaultHomeDir
-	}
-
-	rootDir := filepath.Join(home, defaultDir)
-	if err := os.MkdirAll(rootDir, 0755); err != nil {
-		panic("无法创建配置目录: " + err.Error())
-	}
-	return rootDir
+type Page interface {
+	tview.Primitive
+	Init(ctx context.Context)
+	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey) *tview.Box
+	GetKeyActions() *KeyActions
 }

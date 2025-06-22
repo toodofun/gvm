@@ -15,8 +15,9 @@
 package view
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -39,7 +40,7 @@ func NewPageLanguages(app *Application) *PageLanguages {
 	return page
 }
 
-func (p *PageLanguages) Init() {
+func (p *PageLanguages) Init(ctx context.Context) {
 	p.BindKeys(KeyMap{
 		tcell.KeyEnter: NewKeyAction("Enter", func(evt *tcell.EventKey) *tcell.EventKey {
 			languageName := p.GetSelection().(string)

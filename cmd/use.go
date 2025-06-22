@@ -16,7 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
+	"gvm/internal/log"
 
 	"github.com/spf13/cobra"
 )
@@ -35,12 +36,14 @@ func NewUseCmd() *cobra.Command {
 			lang := args[0]
 			version := args[1]
 
+			_ = log.GetWriter(cmd.Context())
+
 			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
 
-			return language.SetDefaultVersion(version)
+			return language.SetDefaultVersion(cmd.Context(), version)
 		},
 	}
 }

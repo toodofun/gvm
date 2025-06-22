@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package path
 
 import (
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 	"os"
 	"path"
 )
@@ -65,8 +65,8 @@ func GetInstalledVersion(lang, binPath string) ([]string, error) {
 }
 
 func SetSymlink(source, target string) error {
-	info, err := os.Lstat(target)
-	if err == nil && info.Mode()&os.ModeSymlink != 0 {
+	_, err := os.Lstat(target)
+	if err == nil {
 		if err := os.Remove(target); err != nil {
 			return fmt.Errorf("failed to remove symlink %s: %w", target, err)
 		}

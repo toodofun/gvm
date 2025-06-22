@@ -15,13 +15,13 @@
 package view
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
-	"gvm/internal/log"
-	"gvm/languages/golang"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"
+	"gvm/internal/core"
+	"gvm/internal/log"
+	"gvm/languages/golang"
 )
 
 type PageLanguageVersions struct {
@@ -40,7 +40,8 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 	}
 }
 
-func (p *PageLanguageVersions) Init() {
+func (p *PageLanguageVersions) Init(ctx context.Context) {
+	logger := log.GetLogger(ctx)
 	if p.app.lang == nil {
 		p.app.lang = &golang.Golang{}
 	}
@@ -66,11 +67,11 @@ func (p *PageLanguageVersions) Init() {
 						p.app.Alert(fmt.Sprintf("%s is already the default version", v.Version.String()), p.table)
 					} else {
 						p.doAsync(fmt.Sprintf("Set %s as default", v.Version.String()), func() (interface{}, error) {
-							return nil, p.app.lang.SetDefaultVersion(v.Version.String())
+							return nil, p.app.lang.SetDefaultVersion(context.Background(), v.Version.String())
 						}, func(i interface{}) {
 							p.refresh()
 						}, func(err error) {
-							log.Logger.Errorf("Set %s as default error: %+v", v.Version.String(), err)
+							logger.Errorf("Set %s as default error: %+v", v.Version.String(), err)
 							p.app.Alert(fmt.Sprintf("Set %s as default failed: %+v", v.Version.String(), err), p.table)
 						})
 					}
@@ -91,7 +92,7 @@ func (p *PageLanguageVersions) Init() {
 			v := p.GetSelection().(*version)
 			p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
 				p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
-					return nil, p.app.lang.Uninstall(v.Version.String())
+					return nil, p.app.lang.Uninstall(context.Background(), v.Version.String())
 				}, func(i interface{}) {
 					p.refresh()
 				}, func(err error) {
