@@ -22,7 +22,7 @@ func RegisterLanguage(lang Language) {
 	languages[lang.Name()] = lang
 }
 
-var GetLanguage =func(name string) (Language, bool) {
+var GetLanguage = func(name string) (Language, bool) {
 	lang, exists := languages[name]
 	return lang, exists
 }

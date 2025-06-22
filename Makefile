@@ -93,7 +93,7 @@ format: tools.verify.golines tools.verify.goimports
 .PHONY: verify-copyright
 verify-copyright: tools.verify.licctl
 	@echo "===========> Verifying the boilerplate headers for all files"
-	@licctl --check -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github
+	@licctl --check -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github,.idea
 
 ## add-copyright: Ensures source code files have copyright license headers.
 .PHONY: add-copyright

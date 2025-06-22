@@ -17,11 +17,12 @@ package view
 import (
 	"context"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/google/uuid"
 	"gvm/internal/core"
 	"gvm/internal/log"
 	"gvm/languages/golang"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/google/uuid"
 )
 
 type PageLanguageVersions struct {

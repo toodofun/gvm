@@ -16,12 +16,13 @@ package log
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"gvm/internal/core"
 	"io"
 	"os"
 	"path"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
