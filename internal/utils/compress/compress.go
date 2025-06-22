@@ -63,7 +63,14 @@ func UnTarGz(ctx context.Context, tarGzName string, dest string) error {
 		}
 		fInfo := hdr.FileInfo()
 		fileName := hdr.Name
+		cleanName := filepath.Clean(fileName)
+		if strings.HasPrefix(cleanName, "..") || strings.Contains(cleanName, "../") {
+			return fmt.Errorf("invalid archive path: %s", cleanName)
+		}
 		absFileName := filepath.Join(absPath, fileName)
+		if !strings.HasPrefix(absFileName, filepath.Clean(absPath)+string(os.PathSeparator)) {
+			return fmt.Errorf("illegal file path: %s", absFileName)
+		}
 		logger.Debugf("%s", absFileName)
 
 		if fInfo.Mode().IsDir() {
