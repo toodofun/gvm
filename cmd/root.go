@@ -15,8 +15,11 @@
 package cmd
 
 import (
+	"context"
+	"gvm/internal/core"
 	"gvm/internal/log"
 	"io"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -32,14 +35,15 @@ func NewRootCmd() *cobra.Command {
 		Short: "Language Version Manager",
 		Long:  "A tool to manage multiple versions of programming languages.",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			ctx := cmd.Context()
 			if cmd.Name() == "ui" {
-				log.SetWriter(io.Discard)
+				ctx = context.WithValue(ctx, core.ContextLogWriterKey, io.Discard)
 			} else {
-				log.SetWriter(cmd.OutOrStdout())
+				ctx = context.WithValue(ctx, core.ContextLogWriterKey, os.Stdout)
 			}
+			cmd.SetContext(ctx)
 			if debug {
-				log.Logger.SetLevel(logrus.DebugLevel)
-				log.Logger.Debugf("Debug logging enabled")
+				log.SetLevel(logrus.DebugLevel)
 			}
 		},
 	}

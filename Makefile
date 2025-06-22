@@ -69,9 +69,10 @@ lint: tools.verify.golangci-lint
 .PHONY: test
 test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
-	@set -o pipefail;$(GO) test ./... -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
+	@set -o pipefail;$(GO) test -tags=test $(shell go list ./... | grep -v view) -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
 		-timeout=10m -shuffle=on -short \
 	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
+	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out
 
 ## cover: Run unit test and get test coverage.
 .PHONY: cover
@@ -92,7 +93,7 @@ format: tools.verify.golines tools.verify.goimports
 .PHONY: verify-copyright
 verify-copyright: tools.verify.licctl
 	@echo "===========> Verifying the boilerplate headers for all files"
-	@licctl --check -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github
+	@licctl --check -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github,.idea
 
 ## add-copyright: Ensures source code files have copyright license headers.
 .PHONY: add-copyright

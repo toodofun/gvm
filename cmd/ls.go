@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/core"
-	"gvm/internal/common"
+	"gvm/internal/core"
+	"gvm/internal/utils/color"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -36,13 +36,14 @@ func NewLsCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
+			ctx := cmd.Context()
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
 
-			versions, err := language.ListInstalledVersions()
+			versions, err := language.ListInstalledVersions(ctx)
 			if err != nil {
 				return err
 			}
@@ -76,16 +77,16 @@ func NewLsCmd() *cobra.Command {
 			})
 
 			// 获取已安装版本
-			current := language.GetDefaultVersion()
+			current := language.GetDefaultVersion(ctx)
 
 			for _, version := range versions {
 				flag := ""
 				v := version.Version.String()
 				l := version.Location
 				if current.Version.Equal(version.Version) {
-					flag = common.GreenFont("->")
-					v = common.GreenFont(v)
-					l = common.GreenFont(l)
+					flag = color.GreenFont("->")
+					v = color.GreenFont(v)
+					l = color.GreenFont(l)
 				}
 				t.AppendRow(table.Row{
 					flag,

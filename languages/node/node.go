@@ -15,13 +15,16 @@
 package node
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"gvm/core"
-	"gvm/internal/common"
+	"gvm/internal/core"
 	"gvm/internal/http"
+	"gvm/internal/utils/compress"
+	"gvm/internal/utils/path"
+	"gvm/internal/utils/slice"
 	"gvm/languages"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -57,9 +60,9 @@ type File struct {
 	Kind     string `json:"kind"`
 }
 
-func (g *Golang) ListRemoteVersions() ([]*core.RemoteVersion, error) {
+func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	res := make([]*core.RemoteVersion, 0)
-	body, err := http.Default().Get(fmt.Sprintf("%s?mode=json&include=all", baseUrl))
+	body, err := http.Default().Get(ctx, fmt.Sprintf("%s?mode=json&include=all", baseUrl))
 	if err != nil {
 		return nil, err
 	}
@@ -86,13 +89,13 @@ func (g *Golang) ListRemoteVersions() ([]*core.RemoteVersion, error) {
 		})
 	}
 
-	common.ReverseSlice(res)
+	slice.ReverseSlice(res)
 
 	return res, nil
 }
 
-func (g *Golang) ListInstalledVersions() ([]*core.InstalledVersion, error) {
-	installedVersions, err := common.GetInstalledVersion(lang, path.Join("go", "bin"))
+func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
+	installedVersions, err := path.GetInstalledVersion(lang, filepath.Join("go", "bin"))
 	if err != nil {
 		return nil, err
 	}
@@ -107,40 +110,40 @@ func (g *Golang) ListInstalledVersions() ([]*core.InstalledVersion, error) {
 		res = append(res, &core.InstalledVersion{
 			Version:  version,
 			Origin:   v,
-			Location: path.Join(common.GetLangRoot(lang), v),
+			Location: filepath.Join(path.GetLangRoot(lang), v),
 		})
 	}
 	return res, nil
 }
 
-func (g *Golang) SetDefaultVersion(version string) error {
+func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 	// 检查是否已经安装
-	source := path.Join(common.GetLangRoot(lang), version)
-	target := path.Join(common.GetLangRoot(lang), common.Current)
-	if !common.IsPathExist(source) {
+	source := filepath.Join(path.GetLangRoot(lang), version)
+	target := filepath.Join(path.GetLangRoot(lang), path.Current)
+	if !path.IsPathExist(source) {
 		return fmt.Errorf("%s is not installed", version)
 	}
-	return common.SetSymlink(source, target)
+	return path.SetSymlink(source, target)
 }
 
-func (g *Golang) GetDefaultVersion() *core.InstalledVersion {
+func (g *Golang) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
 	return languages.NewLanguage(g).GetDefaultVersion()
 }
 
-func (g *Golang) Uninstall(version string) error {
+func (g *Golang) Uninstall(ctx context.Context, version string) error {
 	return languages.NewLanguage(g).Uninstall(version)
 }
 
-func (g *Golang) Install(version *core.RemoteVersion) error {
+func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error {
 	// 检查是否已经安装
-	if common.IsPathExist(path.Join(common.GetLangRoot(lang), version.Version.String(), "go", "bin")) {
+	if path.IsPathExist(filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin")) {
 		logrus.Infof("Already installed")
 		return nil
 	}
 	logrus.Infof("Installing version %s", version.Version.String())
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
-	head, code, err := http.Default().Head(url)
+	head, code, err := http.Default().Head(ctx, url)
 	if err != nil {
 		return err
 	}
@@ -154,7 +157,7 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 		)
 		// macOS 上的版本可能需要特殊处理
 		url = fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, "amd64")
-		head, code, err = http.Default().Head(url)
+		head, code, err = http.Default().Head(ctx, url)
 		if err != nil {
 			return err
 		}
@@ -166,19 +169,19 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 
 	logrus.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
-		Download(url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
+		Download(ctx, url, filepath.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
 	logrus.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
-	if err := common.UnTarGz(file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
+	if err := compress.UnTarGz(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 		logrus.Warnf("Failed to untar version %s: %s", version, err)
 		return fmt.Errorf("failed to extract version %s: %w", version, err)
 	}
 	logrus.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
-		path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
+		filepath.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
 	)
 	return nil
 }

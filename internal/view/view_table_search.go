@@ -123,7 +123,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, false)
+	}, true)
 	km[KeySlash] = NewKeyAction("Search", func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
@@ -160,7 +160,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, false)
+	}, true)
 	t.actions.Merge(NewKeyActionsFromMap(km))
 }
 

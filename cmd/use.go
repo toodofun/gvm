@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 
 	"github.com/spf13/cobra"
 )
@@ -40,7 +40,7 @@ func NewUseCmd() *cobra.Command {
 				return cmd.Help()
 			}
 
-			return language.SetDefaultVersion(version)
+			return language.SetDefaultVersion(cmd.Context(), version)
 		},
 	}
 }

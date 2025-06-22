@@ -14,28 +14,25 @@
 
 package core
 
-import (
-	"github.com/hashicorp/go-version"
-)
+import "sort"
 
-type Language interface {
-	Name() string
-	ListRemoteVersions() ([]*RemoteVersion, error)
-	ListInstalledVersions() ([]*InstalledVersion, error)
-	SetDefaultVersion(version string) error
-	GetDefaultVersion() *InstalledVersion
-	Install(remoteVersion *RemoteVersion) error
-	Uninstall(version string) error
+var languages = make(map[string]Language)
+
+func RegisterLanguage(lang Language) {
+	languages[lang.Name()] = lang
 }
 
-type RemoteVersion struct {
-	Version *version.Version
-	Origin  string
-	Comment string
+var GetLanguage = func(name string) (Language, bool) {
+	lang, exists := languages[name]
+	return lang, exists
 }
 
-type InstalledVersion struct {
-	Version  *version.Version
-	Origin   string
-	Location string
+func GetAllLanguage() []string {
+	res := make([]string, 0)
+
+	for k := range languages {
+		res = append(res, k)
+	}
+	sort.Strings(res)
+	return res
 }

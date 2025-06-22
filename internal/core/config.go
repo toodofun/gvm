@@ -12,24 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package core
 
-import "github.com/fatih/color"
-
-var (
-	fgRed   = color.New(color.FgRed).SprintFunc()
-	fgGreen = color.New(color.FgGreen).SprintFunc()
-	fgBlue  = color.New(color.FgBlue).SprintFunc()
+import (
+	"os"
+	"path/filepath"
 )
 
-func RedFont(s string) string {
-	return fgRed(s)
-}
+const (
+	defaultHomeDir = "/opt"
+	defaultDir     = ".gvm"
 
-func GreenFont(s string) string {
-	return fgGreen(s)
-}
+	ContextLogWriterKey ctxKey = "context.log.writer"
+)
 
-func BlueFont(s string) string {
-	return fgBlue(s)
+var Version = "1.0.0-dev"
+
+type ctxKey string
+
+var GetRootDir = func() string {
+	home, err := os.UserConfigDir()
+	if err != nil {
+		home = defaultHomeDir
+	}
+
+	rootDir := filepath.Join(home, defaultDir)
+	if err := os.MkdirAll(rootDir, 0755); err != nil {
+		panic("无法创建配置目录: " + err.Error())
+	}
+	return rootDir
 }

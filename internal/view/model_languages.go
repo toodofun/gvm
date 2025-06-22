@@ -15,7 +15,7 @@
 package view
 
 import (
-	"gvm/core"
+	"gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
 )

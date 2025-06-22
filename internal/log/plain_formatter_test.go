@@ -12,10 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package log
 
-func ReverseSlice[T any](arr []T) {
-	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
-		arr[i], arr[j] = arr[j], arr[i]
+import (
+	"testing"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPlainFormatter_Format(t *testing.T) {
+	formatter := &PlainFormatter{}
+	entry := &logrus.Entry{
+		Message: "test message",
 	}
+
+	formatted, err := formatter.Format(entry)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "test message\n", string(formatted))
 }

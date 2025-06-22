@@ -15,8 +15,9 @@
 package view
 
 import (
+	"context"
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 	"sort"
 	"strings"
 	"unicode"
@@ -45,14 +46,15 @@ func NewLanguageVersions() *LanguageVersions {
 }
 
 func (lv *LanguageVersions) GetData(lang core.Language) (*LanguageVersions, error) {
-	rvs, err := lang.ListRemoteVersions()
+	ctx := context.Background()
+	rvs, err := lang.ListRemoteVersions(ctx)
 	if err != nil {
 		rvs = []*core.RemoteVersion{}
 	}
 	sort.Slice(rvs, func(i, j int) bool {
 		return rvs[i].Version.GreaterThan(rvs[j].Version)
 	})
-	installedVersions, err := lang.ListInstalledVersions()
+	installedVersions, err := lang.ListInstalledVersions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +62,7 @@ func (lv *LanguageVersions) GetData(lang core.Language) (*LanguageVersions, erro
 	for _, iv := range installedVersions {
 		installedVersionList[iv.Version.String()] = iv
 	}
-	current := lang.GetDefaultVersion()
+	current := lang.GetDefaultVersion(ctx)
 
 	versions := make([]*version, 0)
 

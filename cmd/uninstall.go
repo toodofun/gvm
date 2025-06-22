@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/core"
+	"gvm/internal/core"
 
 	"github.com/spf13/cobra"
 )
@@ -34,13 +34,14 @@ func NewUninstallCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
 			version := args[1]
+			ctx := cmd.Context()
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
 
-			return language.Uninstall(version)
+			return language.Uninstall(ctx, version)
 		},
 	}
 }
