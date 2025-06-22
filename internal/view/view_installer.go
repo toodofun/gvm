@@ -17,7 +17,7 @@ package view
 import (
 	"context"
 	"fmt"
-	core2 "gvm/internal/core"
+	"gvm/internal/core"
 	"gvm/internal/log"
 	"time"
 
@@ -30,8 +30,8 @@ type Installer struct {
 	app      *Application
 	pages    *tview.Pages
 	buf      *log.NotifyBuffer
-	lang     core2.Language
-	version  *core2.RemoteVersion
+	lang     core.Language
+	version  *core.RemoteVersion
 	callback func(error)
 	ticker   *time.Ticker
 	stopChan chan struct{}
@@ -41,8 +41,8 @@ type Installer struct {
 func NewInstall(
 	app *Application,
 	pages *tview.Pages,
-	lang core2.Language,
-	version *core2.RemoteVersion,
+	lang core.Language,
+	version *core.RemoteVersion,
 	callback func(err error),
 ) *Installer {
 	installer := &Installer{
@@ -106,7 +106,7 @@ func (i *Installer) Install() {
 	// 先添加页面
 	i.pages.AddPage(pageInstaller, i, false, true)
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, core2.ContextLogWriterKey, i.buf)
+	ctx = context.WithValue(ctx, core.ContextLogWriterKey, i.buf)
 
 	go func() {
 		defer func() {

@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	core2 "gvm/internal/core"
+	"gvm/internal/core"
 	"gvm/internal/http"
 	"gvm/internal/utils/compress"
 	path2 "gvm/internal/utils/path"
@@ -60,8 +60,8 @@ type File struct {
 	Kind     string `json:"kind"`
 }
 
-func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion, error) {
-	res := make([]*core2.RemoteVersion, 0)
+func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
+	res := make([]*core.RemoteVersion, 0)
 	body, err := http.Default().Get(ctx, fmt.Sprintf("%s?mode=json&include=all", baseUrl))
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion
 			logrus.Warnf("Failed to parse version %s: %s", v.Version, err)
 			continue
 		}
-		res = append(res, &core2.RemoteVersion{
+		res = append(res, &core.RemoteVersion{
 			Version: vers,
 			Origin:  v.Version,
 			Comment: comment,
@@ -94,20 +94,20 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion
 	return res, nil
 }
 
-func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core2.InstalledVersion, error) {
+func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
 	installedVersions, err := path2.GetInstalledVersion(lang, path.Join("go", "bin"))
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]*core2.InstalledVersion, 0)
+	res := make([]*core.InstalledVersion, 0)
 	for _, v := range installedVersions {
 		version, err := goversion.NewVersion(strings.TrimPrefix(v, "go"))
 		if err != nil {
 			logrus.Warnf("Failed to parse version %s: %s", v, err)
 			continue
 		}
-		res = append(res, &core2.InstalledVersion{
+		res = append(res, &core.InstalledVersion{
 			Version:  version,
 			Origin:   v,
 			Location: path.Join(path2.GetLangRoot(lang), v),
@@ -126,7 +126,7 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 	return path2.SetSymlink(source, target)
 }
 
-func (g *Golang) GetDefaultVersion(ctx context.Context) *core2.InstalledVersion {
+func (g *Golang) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
 	return languages.NewLanguage(g).GetDefaultVersion()
 }
 
@@ -134,7 +134,7 @@ func (g *Golang) Uninstall(ctx context.Context, version string) error {
 	return languages.NewLanguage(g).Uninstall(version)
 }
 
-func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) error {
+func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error {
 	// 检查是否已经安装
 	if path2.IsPathExist(path.Join(path2.GetLangRoot(lang), version.Version.String(), "go", "bin")) {
 		logrus.Infof("Already installed")
@@ -169,23 +169,23 @@ func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) erro
 
 	logrus.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
-		Download(ctx, url, path.Join(core2.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
+		Download(ctx, url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
 	logrus.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
-	if err := compress.UnTarGz(ctx, file, path.Join(core2.GetRootDir(), "go", version.Version.String())); err != nil {
+	if err := compress.UnTarGz(ctx, file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 		logrus.Warnf("Failed to untar version %s: %s", version, err)
 		return fmt.Errorf("failed to extract version %s: %w", version, err)
 	}
 	logrus.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
-		path.Join(core2.GetRootDir(), "go", version.Version.String(), "go", "bin"),
+		path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
 	)
 	return nil
 }
 
 func init() {
-	core2.RegisterLanguage(&Golang{})
+	core.RegisterLanguage(&Golang{})
 }

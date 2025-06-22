@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	core2 "gvm/internal/core"
+	"gvm/internal/core"
 	"gvm/internal/http"
 	"gvm/internal/log"
 	"gvm/internal/utils/compress"
@@ -59,9 +59,9 @@ type File struct {
 	Kind     string `json:"kind"`
 }
 
-func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion, error) {
+func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	logger := log.GetLogger(ctx)
-	res := make([]*core2.RemoteVersion, 0)
+	res := make([]*core.RemoteVersion, 0)
 	body, err := http.Default().Get(ctx, fmt.Sprintf("%s?mode=json&include=all", baseUrl))
 	if err != nil {
 		logger.Errorf("Get remote versions error: %s", err.Error())
@@ -83,7 +83,7 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion
 			logger.Warnf("Failed to parse version %s: %s", v.Version, err)
 			continue
 		}
-		res = append(res, &core2.RemoteVersion{
+		res = append(res, &core.RemoteVersion{
 			Version: ver,
 			Origin:  v.Version,
 			Comment: comment,
@@ -95,7 +95,7 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core2.RemoteVersion
 	return res, nil
 }
 
-func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core2.InstalledVersion, error) {
+func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
 	return languages.NewLanguage(g).ListInstalledVersions(ctx, path.Join("go", "bin"))
 }
 
@@ -103,7 +103,7 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 	return languages.NewLanguage(g).SetDefaultVersion(ctx, version)
 }
 
-func (g *Golang) GetDefaultVersion(ctx context.Context) *core2.InstalledVersion {
+func (g *Golang) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
 	return languages.NewLanguage(g).GetDefaultVersion()
 }
 
@@ -111,7 +111,7 @@ func (g *Golang) Uninstall(ctx context.Context, version string) error {
 	return languages.NewLanguage(g).Uninstall(version)
 }
 
-func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) error {
+func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger := log.GetLogger(ctx)
 	logger.Debugf("Install remote version: %s", version.Origin)
 	// 检查是否已经安装
@@ -159,19 +159,19 @@ func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) erro
 
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
-		Download(ctx, url, path.Join(core2.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
+		Download(ctx, url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	logger.Infof("")
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
 	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
 	if strings.HasSuffix(url, ".tar.gz") {
-		if err := compress.UnTarGz(ctx, file, path.Join(core2.GetRootDir(), "go", version.Version.String())); err != nil {
+		if err := compress.UnTarGz(ctx, file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", version, err)
 			return fmt.Errorf("failed to extract version %s: %w", version, err)
 		}
 	} else if strings.HasSuffix(url, ".zip") {
-		if err := compress.UnZip(ctx, file, path.Join(core2.GetRootDir(), "go", version.Version.String())); err != nil {
+		if err := compress.UnZip(ctx, file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", version, err)
 			return fmt.Errorf("failed to extract version %s: %w", version, err)
 		}
@@ -180,11 +180,11 @@ func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) erro
 	logger.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
-		path.Join(core2.GetRootDir(), "go", version.Version.String(), "go", "bin"),
+		path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
 	)
 	return nil
 }
 
 func init() {
-	core2.RegisterLanguage(&Golang{})
+	core.RegisterLanguage(&Golang{})
 }
