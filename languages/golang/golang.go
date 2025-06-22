@@ -160,7 +160,7 @@ func (g *Golang) Install(ctx context.Context, version *core2.RemoteVersion) erro
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
 		Download(ctx, url, path.Join(core2.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
-	logger.Infof("\n")
+	logger.Infof("")
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
