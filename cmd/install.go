@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	core2 "gvm/internal/core"
+	"gvm/internal/core"
 	"gvm/internal/log"
 	"gvm/internal/utils/match"
 
@@ -40,7 +40,7 @@ func NewInstallCmd() *cobra.Command {
 			ctx := cmd.Context()
 			logger := log.GetLogger(ctx)
 
-			language, exists := core2.GetLanguage(lang)
+			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
@@ -52,7 +52,7 @@ func NewInstallCmd() *cobra.Command {
 			}
 
 			vs := make([]*vers.Version, len(versions))
-			versionMap := make(map[string]*core2.RemoteVersion)
+			versionMap := make(map[string]*core.RemoteVersion)
 			for i, v := range versions {
 				vs[i] = v.Version
 				versionMap[v.Version.String()] = v

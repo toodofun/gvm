@@ -18,6 +18,7 @@ import (
 	"context"
 	"gvm/internal/core"
 	"gvm/internal/log"
+	"io"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 			if cmd.Name() == "ui" {
-				ctx = context.WithValue(ctx, core.ContextLogWriterKey, nil)
+				ctx = context.WithValue(ctx, core.ContextLogWriterKey, io.Discard)
 			} else {
 				ctx = context.WithValue(ctx, core.ContextLogWriterKey, os.Stdout)
 			}

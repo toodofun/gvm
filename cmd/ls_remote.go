@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	core2 "gvm/internal/core"
+	"gvm/internal/core"
 	"gvm/internal/utils/color"
 	"os"
 
@@ -39,7 +39,7 @@ func NewLsRemoteCmd() *cobra.Command {
 			lang := args[0]
 			ctx := cmd.Context()
 
-			language, exists := core2.GetLanguage(lang)
+			language, exists := core.GetLanguage(lang)
 			if !exists {
 				return cmd.Help()
 			}
@@ -78,7 +78,7 @@ func NewLsRemoteCmd() *cobra.Command {
 				// 获取已安装列表
 				installedVersions, err := language.ListInstalledVersions(ctx)
 				if err != nil {
-					installedVersions = make([]*core2.InstalledVersion, 0)
+					installedVersions = make([]*core.InstalledVersion, 0)
 				}
 
 				installedVersionList := make([]string, 0)
