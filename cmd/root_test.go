@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -73,7 +74,7 @@ func TestNewRootCmd(t *testing.T) {
 	uiCmd.SetContext(ctx)
 	uiCmd.PersistentPreRun(uiCmd, []string{})
 	uiCtx := uiCmd.Context()
-	if uiCtx.Value(core.ContextLogWriterKey) != nil {
+	if uiCtx.Value(core.ContextLogWriterKey) != io.Discard {
 		t.Error("expected ContextLogWriterKey to be nil when command name == 'ui'")
 	}
 
