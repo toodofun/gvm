@@ -16,6 +16,7 @@ package view
 
 import (
 	"fmt"
+	"gvm/internal/log"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -71,11 +72,19 @@ func (t *SearchTable) bindKey(evt *tcell.EventKey) *tcell.EventKey {
 func (t *SearchTable) SetModel(model Tabular) {
 	t.model = model
 	t.rows = model.Rows()
+	t.condition = ""
+	t.Render()
 }
 
-func (t *SearchTable) GetSelection() interface{} {
+func (t *SearchTable) GetSelection() (interface{}, bool) {
 	r, _ := t.table.GetSelection()
-	return t.model.GetRow(t.rows[r-1])
+	if len(t.rows) == 0 || r <= 0 {
+		return nil, false
+	}
+	if r-1 >= len(t.rows) {
+		return nil, false
+	}
+	return t.model.GetRow(t.rows[r-1]), true
 }
 
 func (t *SearchTable) GetModel() Tabular {
@@ -165,6 +174,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 	km[KeyShiftG] = NewKeyAction("Jump to bottom", ActionNil, true, WithDefault())
 	km[KeyColonQ] = NewKeyAction("Quit", ActionNil, true)
 	t.actions.Merge(NewKeyActionsFromMap(km))
+	t.app.SetFocus(t.table)
 }
 
 func (t *SearchTable) init() {
@@ -202,6 +212,9 @@ func (t *SearchTable) command(cmd string) {
 	switch cmd {
 	case "q":
 		t.app.Stop()
+	case "log":
+		t.app.Info(fmt.Sprintf("LogPath: %s", log.GetLogPath()), t.table)
+
 	default:
 		t.app.Alert(fmt.Sprintf("command `%s` not found", cmd), t.table)
 	}
@@ -222,7 +235,12 @@ func (t *SearchTable) search(condition string) {
 			return false
 		})
 	}
-	t.setTitle()
+	t.Render()
+}
+
+func (t *SearchTable) Reset() {
+	t.condition = ""
+	t.rows = t.model.Rows()
 	t.Render()
 }
 
@@ -260,7 +278,11 @@ func (t *SearchTable) Render() {
 		}
 	}
 
-	t.Select(1, 0)
+	if len(t.rows) > 0 {
+		t.Select(1, 0)
+	} else {
+		t.Select(0, 0)
+	}
 	t.table.SetOffset(0, 0)
 }
 

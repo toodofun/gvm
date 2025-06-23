@@ -33,21 +33,13 @@ type PageLanguageVersions struct {
 }
 
 func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
+	logger := log.GetLogger(app.ctx)
 	lv := NewLanguageVersions()
-	return &PageLanguageVersions{
+	p := &PageLanguageVersions{
 		SearchTable:      NewSearchTable(lv, app),
 		languageVersions: lv,
 		app:              app,
 	}
-}
-
-func (p *PageLanguageVersions) Init(ctx context.Context) {
-	logger := log.GetLogger(ctx)
-	if p.app.lang == nil {
-		p.app.lang = &golang.Golang{}
-	}
-	p.SetModel(&LanguageVersions{lang: p.app.lang})
-	p.Render()
 	p.BindKeys(KeyMap{
 		KeyI: NewKeyAction("Filter by installed", func(evt *tcell.EventKey) *tcell.EventKey {
 			model := p.GetModel()
@@ -61,14 +53,22 @@ func (p *PageLanguageVersions) Init(ctx context.Context) {
 			return evt
 		}, true),
 		tcell.KeyEnter: NewKeyAction("Install or set as default", func(evt *tcell.EventKey) *tcell.EventKey {
-			v := p.GetSelection().(*version)
+			vi, ok := p.GetSelection()
+			if !ok {
+				return evt
+			}
+			v := vi.(*version)
 			if v.isInstalled {
 				p.app.Confirm(fmt.Sprintf("Are you sure you want to set %s as default", v.Version.String()), func() {
 					if v.isDefault {
 						p.app.Alert(fmt.Sprintf("%s is already the default version", v.Version.String()), p.table)
 					} else {
 						p.doAsync(fmt.Sprintf("Set %s as default", v.Version.String()), func() (interface{}, error) {
-							return nil, p.app.lang.SetDefaultVersion(context.Background(), v.Version.String())
+							if err := p.app.lang.SetDefaultVersion(context.Background(), v.Version.String()); err != nil {
+								return nil, err
+							}
+							p.app.SetFocus(p.table)
+							return nil, nil
 						}, func(i interface{}) {
 							p.refresh()
 						}, func(err error) {
@@ -90,7 +90,11 @@ func (p *PageLanguageVersions) Init(ctx context.Context) {
 			return evt
 		}, true),
 		tcell.KeyCtrlD: NewKeyAction("Uninstall selected", func(evt *tcell.EventKey) *tcell.EventKey {
-			v := p.GetSelection().(*version)
+			vi, ok := p.GetSelection()
+			if !ok {
+				return evt
+			}
+			v := vi.(*version)
 			p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
 				p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
 					return nil, p.app.lang.Uninstall(context.Background(), v.Version.String())
@@ -106,6 +110,15 @@ func (p *PageLanguageVersions) Init(ctx context.Context) {
 		}, true),
 	})
 
+	return p
+}
+
+func (p *PageLanguageVersions) Init(ctx context.Context) {
+	if p.app.lang == nil {
+		p.app.lang = &golang.Golang{}
+	}
+	p.SetModel(&LanguageVersions{lang: p.app.lang})
+	p.Render()
 	p.refresh()
 }
 
@@ -114,7 +127,6 @@ func (p *PageLanguageVersions) refresh() {
 		func(tabular Tabular) {
 			data := tabular
 			p.SetModel(data)
-			p.Render()
 		}, func(err error) {
 			p.app.Alert(
 				fmt.Sprintf("Error getting remote versions for %s\n< %s >", p.app.lang.Name(), err.Error()),

@@ -18,8 +18,7 @@ import "github.com/rivo/tview"
 
 const (
 	// 注意: Logo最多6行，最少2行
-	logo = `
-___________    _______  ___
+	logo = `____________    _______  ___
 __  ____/_ |  / /__   |/  /
 _  / __ __ | / /__  /|_/ / 
 / /_/ / __ |/ / _  /  / /  
@@ -34,6 +33,7 @@ const (
 
 const (
 	alertKey   = "alert"
+	infoKey = "info"
 	confirmKey = "confirm"
 	errorMsg   = `
   (\_/)    

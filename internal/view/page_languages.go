@@ -43,7 +43,11 @@ func NewPageLanguages(app *Application) *PageLanguages {
 func (p *PageLanguages) Init(ctx context.Context) {
 	p.BindKeys(KeyMap{
 		tcell.KeyEnter: NewKeyAction("Enter", func(evt *tcell.EventKey) *tcell.EventKey {
-			languageName := p.GetSelection().(string)
+			languageNameI, ok := p.GetSelection()
+			if !ok {
+				return evt
+			}
+			languageName := languageNameI.(string)
 			lang, ok := core.GetLanguage(languageName)
 			if !ok {
 				p.app.Alert(fmt.Sprintf("language not found: %s", languageName), p.table)
