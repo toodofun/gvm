@@ -16,9 +16,10 @@ package languages
 
 import (
 	"context"
-	goversion "github.com/hashicorp/go-version"
 	"gvm/internal/core"
 	"gvm/internal/log"
+
+	goversion "github.com/hashicorp/go-version"
 )
 
 // HasInstall the Check if it is installed
