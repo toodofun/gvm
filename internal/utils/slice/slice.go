@@ -12,20 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package slice
 
-import (
-	"gvm/internal/view"
-
-	"github.com/spf13/cobra"
-)
-
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
+func ReverseSlice[T any](arr []T) {
+	for i, j := 0, len(arr)-1; i < j; i, j = i+1, j-1 {
+		arr[i], arr[j] = arr[j], arr[i]
 	}
 }

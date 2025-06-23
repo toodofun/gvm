@@ -16,9 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/core"
-	"gvm/internal/common"
+	"gvm/internal/core"
 	"gvm/internal/log"
+	"gvm/internal/utils/match"
 
 	vers "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"
@@ -37,6 +37,8 @@ func NewInstallCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			lang := args[0]
 			version := args[1]
+			ctx := cmd.Context()
+			logger := log.GetLogger(ctx)
 
 			language, exists := core.GetLanguage(lang)
 			if !exists {
@@ -44,7 +46,7 @@ func NewInstallCmd() *cobra.Command {
 			}
 
 			// 检查是否存在
-			versions, err := language.ListRemoteVersions()
+			versions, err := language.ListRemoteVersions(ctx)
 			if err != nil {
 				return err
 			}
@@ -56,13 +58,13 @@ func NewInstallCmd() *cobra.Command {
 				versionMap[v.Version.String()] = v
 			}
 
-			matchedVersion, err := common.MatchVersion(version, vs)
+			matchedVersion, err := match.MatchVersion(version, vs)
 			if err != nil {
 				return err
 			}
-			log.Logger.Infof("Matched version %s", versionMap[matchedVersion.String()].Version.String())
+			logger.Infof("Matched version %s", versionMap[matchedVersion.String()].Version.String())
 
-			if err := language.Install(versionMap[matchedVersion.String()]); err != nil {
+			if err := language.Install(ctx, versionMap[matchedVersion.String()]); err != nil {
 				return err
 			}
 

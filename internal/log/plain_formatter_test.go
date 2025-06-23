@@ -12,20 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package log
 
 import (
-	"gvm/internal/view"
+	"testing"
 
-	"github.com/spf13/cobra"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
+func TestPlainFormatter_Format(t *testing.T) {
+	formatter := &PlainFormatter{}
+	entry := &logrus.Entry{
+		Message: "test message",
 	}
+
+	formatted, err := formatter.Format(entry)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "test message\n", string(formatted))
 }

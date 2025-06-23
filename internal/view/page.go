@@ -12,20 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package view
 
 import (
-	"gvm/internal/view"
+	"context"
 
-	"github.com/spf13/cobra"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
-	}
+type Page interface {
+	tview.Primitive
+	Init(ctx context.Context)
+	SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey) *tview.Box
+	GetKeyActions() *KeyActions
 }

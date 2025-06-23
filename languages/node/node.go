@@ -15,12 +15,16 @@
 package node
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"gvm/core"
-	"gvm/internal/common"
+	"gvm/internal/core"
 	"gvm/internal/http"
 	"gvm/internal/log"
+	common "gvm/internal/utils/compress"
+	"gvm/internal/utils/slice"
+	"path/filepath"
+
 	"gvm/languages"
 	"os"
 	"path"
@@ -76,9 +80,10 @@ func (v *Version) ConvertToLTS() string {
 	}
 }
 
-func (n *Node) ListRemoteVersions() ([]*core.RemoteVersion, error) {
+func (n *Node) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
+	logger := log.GetLogger(ctx)
 	res := make([]*core.RemoteVersion, 0)
-	body, err := http.Default().Get(fmt.Sprintf("%sdist/index.json", n.baseURL))
+	body, err := http.Default().Get(ctx, fmt.Sprintf("%sdist/index.json", n.baseURL))
 	if err != nil {
 		return nil, err
 	}
@@ -94,48 +99,58 @@ func (n *Node) ListRemoteVersions() ([]*core.RemoteVersion, error) {
 			Comment: v.ConvertToLTS(),
 		}
 		if rv.Version, err = goversion.NewVersion(strings.TrimPrefix(v.Version, "v")); err != nil {
-			log.Logger.Warnf("Failed to parse version %s: %s", v.Version, err)
+			logger.Warnf("Failed to parse version %s: %s", v.Version, err)
 			continue
 		}
 		n.versionMap[v.Version] = v
 		res = append(res, rv)
 	}
-	common.ReverseSlice(res)
+	slice.ReverseSlice(res)
 	return res, nil
 }
 
-func (n *Node) ListInstalledVersions() ([]*core.InstalledVersion, error) {
-	return languages.NewLanguage(n).ListInstalledVersions(path.Join(lang, "bin"))
+func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
+	return languages.NewLanguage(n).ListInstalledVersions(ctx, filepath.Join(lang, "bin"))
 }
 
-func (n *Node) SetDefaultVersion(version string) error {
-	return languages.NewLanguage(n).SetDefaultVersion(version)
+func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
+	return languages.NewLanguage(n).SetDefaultVersion(ctx, version)
 }
 
-func (n *Node) GetDefaultVersion() *core.InstalledVersion {
+func (n *Node) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
 	return languages.NewLanguage(n).GetDefaultVersion()
 }
 
-func (n *Node) Uninstall(version string) error {
+func (n *Node) Uninstall(ctx context.Context, version string) error {
 	return languages.NewLanguage(n).Uninstall(version)
 }
 
-func (n *Node) Install(version *core.RemoteVersion) error {
-	if common.IsPathExist(path.Join(common.GetLangRoot(lang), version.Version.String(), lang, "bin")) {
-		log.Logger.Infof("Already installed")
-		return nil
+func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
+	logger := log.GetLogger(ctx)
+	logger.Debugf("Install remote version: %s", version.Origin)
+
+	installed, err := n.ListInstalledVersions(ctx)
+	if err != nil {
+		logger.Errorf("Failed to list installed versions: %+v", err)
+		return err
+	}
+	for _, ver := range installed {
+		if ver.Version.Equal(version.Version) {
+			logger.Infof("Version %s already installed", version.Version.String())
+			return nil
+		}
 	}
 	nodeInfo, ok := n.versionMap[version.Origin]
 	if !ok {
 		return fmt.Errorf("%s version not found", version.Origin)
 	}
-	log.Logger.Infof("Installing version %s", version.Version.String())
+	logger.Infof("Installing version %s", version.Version.String())
 	name, err := getPackageName(nodeInfo, version)
 	if err != nil {
 		return err
 	}
 	url := fmt.Sprintf("%sdist/%s/%s", n.baseURL, version.Origin, name)
-	head, code, err := http.Default().Head(url)
+	head, code, err := http.Default().Head(ctx, url)
 	if err != nil {
 		return err
 	}
@@ -143,17 +158,17 @@ func (n *Node) Install(version *core.RemoteVersion) error {
 		return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
 	}
 
-	log.Logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
-	file, err := http.Default().Download(url, path.Join(core.GetRootDir(), lang, version.Version.String()), name)
+	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
+	file, err := http.Default().Download(ctx, url, path.Join(core.GetRootDir(), lang, version.Version.String()), name)
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
 
-	log.Logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
-	if err = unPackage(file, name, version.Version.String()); err != nil {
+	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
+	if err = unPackage(ctx, file, name, version.Version.String()); err != nil {
 		return err
 	}
-	log.Logger.Infof(
+	logger.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
 		path.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
@@ -161,7 +176,8 @@ func (n *Node) Install(version *core.RemoteVersion) error {
 	return nil
 }
 
-func unPackage(file, packageName, version string) error {
+func unPackage(ctx context.Context, file, packageName, version string) error {
+	logger := log.GetLogger(ctx)
 	dest := path.Join(core.GetRootDir(), lang, version)
 	var (
 		err      error
@@ -171,20 +187,20 @@ func unPackage(file, packageName, version string) error {
 
 	switch languages.AllSuffix.GetSuffix(packageName) {
 	case languages.Tar:
-		err = common.UnTarGz(file, dest)
+		err = common.UnTarGz(ctx, file, dest)
 	case languages.Zip:
-		err = common.UnZip(file, dest)
+		err = common.UnZip(ctx, file, dest)
 	case languages.Pkg:
 		err = common.UnPkg(file, dest)
 	}
 	if fileInfo, err = os.Stat(tagetPath); os.IsNotExist(err) || !fileInfo.IsDir() {
-		log.Logger.Warnf("Failed to untar version %s: %s", version, err)
+		logger.Warnf("Failed to untar version %s: %s", version, err)
 		return fmt.Errorf("failed to extract version %s: %w", version, err)
 	}
 	newPath := fmt.Sprintf("%s/%s", dest, lang)
 	err = os.Rename(tagetPath, newPath)
 	if err != nil {
-		log.Logger.Warnf("Failed to untar version %s: %s", version, err)
+		logger.Warnf("Failed to untar version %s: %s", version, err)
 		return fmt.Errorf("failed to extract version %s: %w", version, err)
 	}
 

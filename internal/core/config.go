@@ -12,20 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package core
 
 import (
-	"gvm/internal/view"
-
-	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 )
 
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
+const (
+	defaultHomeDir = "/opt"
+	defaultDir     = ".gvm"
+
+	ContextLogWriterKey ctxKey = "context.log.writer"
+)
+
+var Version = "1.0.0-dev"
+
+type ctxKey string
+
+var GetRootDir = func() string {
+	home, err := os.UserConfigDir()
+	if err != nil {
+		home = defaultHomeDir
 	}
+
+	rootDir := filepath.Join(home, defaultDir)
+	if err := os.MkdirAll(rootDir, 0755); err != nil {
+		panic("无法创建配置目录: " + err.Error())
+	}
+	return rootDir
 }

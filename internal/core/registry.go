@@ -12,20 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package core
 
-import (
-	"gvm/internal/view"
+import "sort"
 
-	"github.com/spf13/cobra"
-)
+var languages = make(map[string]Language)
 
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
+func RegisterLanguage(lang Language) {
+	languages[lang.Name()] = lang
+}
+
+var GetLanguage = func(name string) (Language, bool) {
+	lang, exists := languages[name]
+	return lang, exists
+}
+
+func GetAllLanguage() []string {
+	res := make([]string, 0)
+
+	for k := range languages {
+		res = append(res, k)
 	}
+	sort.Strings(res)
+	return res
 }

@@ -12,20 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package color
 
-import (
-	"gvm/internal/view"
+import "github.com/fatih/color"
 
-	"github.com/spf13/cobra"
+var (
+	fgRed   = color.New(color.FgRed).SprintFunc()
+	fgGreen = color.New(color.FgGreen).SprintFunc()
+	fgBlue  = color.New(color.FgBlue).SprintFunc()
 )
 
-func NewUICmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "ui",
-		Short: "Run in the terminal UI",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return view.CreateApplication(cmd.Context()).Run()
-		},
-	}
+func RedFont(s string) string {
+	return fgRed(s)
+}
+
+func GreenFont(s string) string {
+	return fgGreen(s)
+}
+
+func BlueFont(s string) string {
+	return fgBlue(s)
 }
