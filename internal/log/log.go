@@ -29,6 +29,7 @@ var (
 	logFile     *os.File
 	logFileOnce sync.Once
 	logLevel    = logrus.InfoLevel
+	logPath     = path.Join(core.GetRootDir(), "app.log")
 )
 
 type ILogger interface {
@@ -67,6 +68,10 @@ func GetLevel() string {
 	return logLevel.String()
 }
 
+func GetLogPath() string {
+	return logPath
+}
+
 func GetLogger(ctx context.Context) ILogger {
 	logger := logrus.New()
 	logger.SetLevel(logLevel)
@@ -78,7 +83,7 @@ func GetLogger(ctx context.Context) ILogger {
 func createWriter(writer io.Writer) io.Writer {
 	logFileOnce.Do(func() {
 		var err error
-		logFile, err = os.OpenFile(path.Join(core.GetRootDir(), "app.log"),
+		logFile, err = os.OpenFile(logPath,
 			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			logFile = nil

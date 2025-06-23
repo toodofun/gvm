@@ -49,6 +49,27 @@ func (a *Application) Confirm(msg string, onConfirm, onCancel func()) {
 	a.pages.AddPage(confirmKey, modal, false, true)
 }
 
+func (a *Application) Info(msg string, after tview.Primitive) {
+	modal := tview.NewModal()
+	modal.Box.SetBackgroundColor(tcell.ColorBlack)
+	modal.SetBackgroundColor(tcell.ColorBlack)
+	modal.SetText(msg)
+	modal.SetBorder(true).
+		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< info >")).
+		SetBorderColor(tcell.ColorBlue)
+	modal.AddButtons([]string{"Dismiss"})
+	modal.SetButtonBackgroundColor(tcell.ColorGray)
+	modal.SetButtonTextColor(tcell.ColorBlack)
+	modal.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorBlue))
+
+	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+		a.pages.RemovePage(infoKey)
+		a.Application.SetFocus(after)
+	})
+
+	a.pages.AddPage(infoKey, modal, false, true)
+}
+
 func (a *Application) Alert(msg string, after tview.Primitive) {
 	modal := tview.NewModal()
 	modal.Box.SetBackgroundColor(tcell.ColorBlack)
@@ -105,25 +126,6 @@ func (a *Application) ShowLoading(message string, name string) {
 				}
 			})
 		}
-
-		//for {
-		//	// nolint:staticcheck
-		//	select {
-		//	case <-ticker.C:
-		//		// 检查模态框是否还存在
-		//		if a.pages.HasPage(name) {
-		//			a.QueueUpdateDraw(func() {
-		//				if a.pages.HasPage(name) {
-		//					spinner := spinners[spinnerIndex%len(spinners)]
-		// 					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
-		//					spinnerIndex++
-		//				}
-		//			})
-		//		} else {
-		//			return // 退出动画循环
-		//		}
-		//	}
-		//}
 	}()
 
 	a.pages.AddPage(name, modal, false, true)

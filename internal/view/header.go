@@ -45,11 +45,11 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		Value string
 	}
 	descMap := []KV{
-		{Key: "[yellow]Ver.[-:-:-]", Value: core.Version},
-		{Key: "[yellow]Host[-:-:-]", Value: hn},
-		{Key: "[yellow]User[-:-:-]", Value: u.Name},
-		{Key: "[yellow]OS[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
-		{Key: "[yellow]Level[-:-:-]", Value: log.GetLevel()},
+		{Key: "[yellow] Hostname[-:-:-]", Value: hn},
+		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
+		{Key: "[yellow] GVM Rev.[-:-:-]", Value: core.Version},
+		{Key: "[yellow] Username[-:-:-]", Value: u.Name},
+		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
 	}
 	desc := tview.NewTable().
 		SetBorders(false)
@@ -60,12 +60,13 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 
 	a.help = tview.NewFlex()
 
-	logger.Debugf("logo width: %d", len(strings.Split(logo, "\n")[1])+2)
+	logoWidth := len(strings.Split(logo, "\n")[1]) + 1
+	logger.Debugf("logo width: %d", logoWidth)
 
 	header := tview.NewFlex().
 		AddItem(desc, 38, 0, false).
 		AddItem(a.help, 0, 1, false).
-		AddItem(tview.NewTextView().SetText(logo).SetTextColor(tcell.ColorYellow), len(strings.Split(logo, "\n")[1])+2, 0, false)
+		AddItem(tview.NewTextView().SetText(logo).SetTextColor(tcell.ColorYellow), logoWidth, 0, false)
 
 	return header
 }
@@ -90,6 +91,9 @@ func (a *Application) readerHelp(kas *KeyActions) {
 				}
 
 				keyName := strings.ToLower(tcell.KeyNames[key])
+				if len(action.Opts.DisplayName) > 0 {
+					keyName = action.Opts.DisplayName
+				}
 				table.SetCell(
 					row,
 					col*2,

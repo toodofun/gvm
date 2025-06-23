@@ -80,7 +80,7 @@ func TestHead(t *testing.T) {
 	ctx := context.Background()
 
 	// 测试正常请求，使用一个确定存在的URL
-	headers, status, err := c.Head(ctx, "https://httpbin.org/get")
+	headers, status, err := c.Head(ctx, "https://httpbingo.org/get")
 	assert.NoError(t, err)
 	assert.Greater(t, status, 0)
 	assert.NotNil(t, headers)
@@ -106,7 +106,7 @@ func TestDownload(t *testing.T) {
 	assert.Error(t, err)
 
 	// 测试成功路径，模拟一个小文件下载（使用 httpbin.org）
-	url := "https://httpbin.org/bytes/10"
+	url := "https://httpbingo.org/bytes/10"
 	filename := "testfile.dat"
 	filepath := filepath.Join(tmpDir, filename)
 

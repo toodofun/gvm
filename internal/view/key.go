@@ -24,13 +24,15 @@ func init() {
 	tcell.KeyNames[KeySlash] = "/"
 	tcell.KeyNames[KeySpace] = "space"
 	tcell.KeyNames[KeyColon] = ":"
+	tcell.KeyNames[KeyColonQ] = ":q"
 }
 
 const (
-	KeyHelp  tcell.Key = 63
-	KeySpace tcell.Key = 32
-	KeySlash tcell.Key = 47
-	KeyColon tcell.Key = 58
+	KeyHelp   tcell.Key = 63
+	KeySpace  tcell.Key = 32
+	KeySlash  tcell.Key = 47
+	KeyColon  tcell.Key = 58
+	KeyColonQ tcell.Key = 59
 )
 
 const (

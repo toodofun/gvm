@@ -16,6 +16,7 @@ package view
 
 import (
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/gdamore/tcell/v2"
@@ -24,9 +25,13 @@ import (
 type (
 	ActionHandler func(key *tcell.EventKey) *tcell.EventKey
 	ActionOpts    struct {
-		Visible bool
-		Shared  bool
+		DisplayName string
+		Visible     bool
+		Shared      bool
+		Default     bool // 是否只显示快捷键而不注册方法[适用于tview默认快捷键展示]
 	}
+
+	ActionOptsFn func(opts *ActionOpts)
 
 	KeyAction struct {
 		Description string
@@ -44,11 +49,22 @@ type (
 	RandFn func(tcell.Key, KeyAction)
 )
 
-func NewKeyAction(d string, a ActionHandler, visible bool) KeyAction {
-	return NewKeyActionWithOpts(d, a, ActionOpts{Visible: visible})
+var ActionNil = func(evt *tcell.EventKey) *tcell.EventKey { return evt }
+
+func NewKeyAction(d string, a ActionHandler, visible bool, opts ...ActionOptsFn) KeyAction {
+	actionOpts := ActionOpts{
+		Visible: visible,
+	}
+	for _, opt := range opts {
+		opt(&actionOpts)
+	}
+	return NewKeyActionWithOpts(d, a, actionOpts)
 }
 
-func NewKeyActionWithOpts(d string, a ActionHandler, opts ActionOpts) KeyAction {
+func NewKeyActionWithOpts(d string, a ActionHandler, opts ActionOpts, optsFn ...ActionOptsFn) KeyAction {
+	for _, fn := range optsFn {
+		fn(&opts)
+	}
 	return KeyAction{
 		Description: d,
 		Action:      a,
@@ -68,11 +84,27 @@ func NewKeyActionsFromMap(m KeyMap) *KeyActions {
 	}
 }
 
+func WithDisplayName(displayName string) ActionOptsFn {
+	return func(opts *ActionOpts) {
+		opts.DisplayName = displayName
+	}
+}
+
+func WithDefault() ActionOptsFn {
+	return func(opts *ActionOpts) {
+		opts.Default = true
+	}
+}
+
 func (a *KeyActions) Get(key tcell.Key) (KeyAction, bool) {
 	a.mx.RLock()
 	defer a.mx.RUnlock()
 
 	v, ok := a.actions[key]
+
+	if v.Opts.Default {
+		return v, false
+	}
 
 	return v, ok
 }
@@ -119,7 +151,15 @@ func (a *KeyActions) Range(f RandFn) {
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(i, j int) bool {
-		return keys[i] < keys[j]
+		keyName := func(k int) string {
+			kn := strings.ToLower(tcell.KeyNames[keys[k]])
+			if v, ok := a.Get(keys[k]); ok && len(v.Opts.DisplayName) > 0 {
+				kn = v.Opts.DisplayName
+			}
+			return kn
+		}
+
+		return keyName(i) < keyName(j)
 	})
 
 	// 按顺序遍历
@@ -127,17 +167,6 @@ func (a *KeyActions) Range(f RandFn) {
 		f(k, a.actions[k])
 	}
 }
-
-//func (a *KeyActions) Range(f RandFn) {
-//	var km KeyMap
-//	a.mx.RLock()
-//	km = a.actions
-//	a.mx.RUnlock()
-//
-//	for k, v := range km {
-//		f(k, v)
-//	}
-//}
 
 func (a *KeyActions) Merge(as *KeyActions) {
 	a.mx.Lock()

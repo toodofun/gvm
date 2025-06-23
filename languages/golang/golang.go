@@ -22,9 +22,10 @@ import (
 	"gvm/internal/http"
 	"gvm/internal/log"
 	"gvm/internal/utils/compress"
+	"gvm/internal/utils/path"
 	"gvm/internal/utils/slice"
 	"gvm/languages"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -96,7 +97,7 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion,
 }
 
 func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
-	return languages.NewLanguage(g).ListInstalledVersions(ctx, path.Join("go", "bin"))
+	return languages.NewLanguage(g).ListInstalledVersions(ctx, filepath.Join("go", "bin"))
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
@@ -159,28 +160,28 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
-		Download(ctx, url, path.Join(core.GetRootDir(), "go", version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
+		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	logger.Infof("")
 	if err != nil {
-		return fmt.Errorf("failed to download version %s: %w", version, err)
+		return fmt.Errorf("failed to download version %s: %w", version.Version.String(), err)
 	}
 	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
 	if strings.HasSuffix(url, ".tar.gz") {
-		if err := compress.UnTarGz(ctx, file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
-			logger.Warnf("Failed to untar version %s: %s", version, err)
-			return fmt.Errorf("failed to extract version %s: %w", version, err)
+		if err := compress.UnTarGz(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
+			logger.Warnf("Failed to untar version %s: %s", version.Version.String(), err)
+			return fmt.Errorf("failed to extract version %s: %w", version.Version.String(), err)
 		}
 	} else if strings.HasSuffix(url, ".zip") {
-		if err := compress.UnZip(ctx, file, path.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
-			logger.Warnf("Failed to untar version %s: %s", version, err)
-			return fmt.Errorf("failed to extract version %s: %w", version, err)
+		if err := compress.UnZip(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
+			logger.Warnf("Failed to untar version %s: %s", version.Version.String(), err)
+			return fmt.Errorf("failed to extract version %s: %w", version.Version.String(), err)
 		}
 	}
 
 	logger.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
-		path.Join(core.GetRootDir(), "go", version.Version.String(), "go", "bin"),
+		filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
 	)
 	return nil
 }

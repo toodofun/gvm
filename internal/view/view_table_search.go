@@ -16,6 +16,7 @@ package view
 
 import (
 	"fmt"
+	"gvm/internal/log"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -71,11 +72,19 @@ func (t *SearchTable) bindKey(evt *tcell.EventKey) *tcell.EventKey {
 func (t *SearchTable) SetModel(model Tabular) {
 	t.model = model
 	t.rows = model.Rows()
+	t.condition = ""
+	t.Render()
 }
 
-func (t *SearchTable) GetSelection() interface{} {
+func (t *SearchTable) GetSelection() (interface{}, bool) {
 	r, _ := t.table.GetSelection()
-	return t.model.GetRow(t.rows[r-1])
+	if len(t.rows) == 0 || r <= 0 {
+		return nil, false
+	}
+	if r-1 >= len(t.rows) {
+		return nil, false
+	}
+	return t.model.GetRow(t.rows[r-1]), true
 }
 
 func (t *SearchTable) GetModel() Tabular {
@@ -91,7 +100,7 @@ func (t *SearchTable) GetRowCount() int {
 }
 
 func (t *SearchTable) BindKeys(km KeyMap) {
-	km[KeyColon] = NewKeyAction("Command", func(evt *tcell.EventKey) *tcell.EventKey {
+	km[KeyColon] = NewKeyAction("Enter command mode", func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
 			SetBorderColor(tcell.ColorGreen).
@@ -123,8 +132,8 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, true)
-	km[KeySlash] = NewKeyAction("Search", func(evt *tcell.EventKey) *tcell.EventKey {
+	}, true, WithDisplayName(":cmd"))
+	km[KeySlash] = NewKeyAction("Enter filter mode", func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
 			SetBorderColor(tcell.ColorGreen).
@@ -160,8 +169,12 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, true)
+	}, true, WithDisplayName("/term"))
+	km[KeyG] = NewKeyAction("Jump to top", ActionNil, true, WithDefault())
+	km[KeyShiftG] = NewKeyAction("Jump to bottom", ActionNil, true, WithDefault())
+	km[KeyColonQ] = NewKeyAction("Quit", ActionNil, true)
 	t.actions.Merge(NewKeyActionsFromMap(km))
+	t.app.SetFocus(t.table)
 }
 
 func (t *SearchTable) init() {
@@ -199,6 +212,8 @@ func (t *SearchTable) command(cmd string) {
 	switch cmd {
 	case "q":
 		t.app.Stop()
+	case "log":
+		t.app.Info(fmt.Sprintf("LogPath: %s", log.GetLogPath()), t.table)
 	default:
 		t.app.Alert(fmt.Sprintf("command `%s` not found", cmd), t.table)
 	}
@@ -209,8 +224,7 @@ func (t *SearchTable) search(condition string) {
 	if len(condition) == 0 {
 		t.rows = t.model.Rows()
 	} else {
-		tmp := t.model.Rows()
-		t.rows = slice.Filter(tmp, func(index int, item []string) bool {
+		t.rows = slice.Filter(t.model.Rows(), func(index int, item []string) bool {
 			for _, row := range item {
 				if strings.Contains(strings.ToLower(row), strings.ToLower(condition)) {
 					return true
@@ -219,7 +233,6 @@ func (t *SearchTable) search(condition string) {
 			return false
 		})
 	}
-	t.setTitle()
 	t.Render()
 }
 
@@ -257,7 +270,11 @@ func (t *SearchTable) Render() {
 		}
 	}
 
-	t.Select(1, 0)
+	if len(t.rows) > 0 {
+		t.Select(1, 0)
+	} else {
+		t.Select(0, 0)
+	}
 	t.table.SetOffset(0, 0)
 }
 
