@@ -59,7 +59,7 @@ func (l *Language) SetDefaultVersion(version string) error {
 		return fmt.Errorf("get path manager error: %w", err)
 	}
 
-	if err = pathManager.AddIfNotExists(path.Join(target, "go", "bin"), common.PositionPrepend); err != nil {
+	if err = pathManager.AddIfNotExists(path.Join(target, l.lang.Name(), "bin"), common.PositionPrepend); err != nil {
 		return fmt.Errorf("add to path error: %w", err)
 	}
 

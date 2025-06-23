@@ -31,7 +31,7 @@ import (
 
 const (
 	lang    = "go"
-	baseUrl = "https://go.dev/dl/"
+	baseURL = "https://go.dev/dl/"
 )
 
 type Golang struct {
@@ -59,7 +59,7 @@ type File struct {
 
 func (g *Golang) ListRemoteVersions() ([]*core.RemoteVersion, error) {
 	res := make([]*core.RemoteVersion, 0)
-	body, err := http.Default().Get(fmt.Sprintf("%s?mode=json&include=all", baseUrl))
+	body, err := http.Default().Get(fmt.Sprintf("%s?mode=json&include=all", baseURL))
 	if err != nil {
 		log.Logger.Errorf("Get remote versions error: %s", err.Error())
 		return nil, err
@@ -93,7 +93,7 @@ func (g *Golang) ListRemoteVersions() ([]*core.RemoteVersion, error) {
 }
 
 func (g *Golang) ListInstalledVersions() ([]*core.InstalledVersion, error) {
-	return languages.NewLanguage(g).ListInstalledVersions(path.Join("go", "bin"))
+	return languages.NewLanguage(g).ListInstalledVersions(path.Join(lang, "bin"))
 }
 
 func (g *Golang) SetDefaultVersion(version string) error {
@@ -125,9 +125,9 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 
 	log.Logger.Infof("Installing version %s", version.Version.String())
 	// 检查版本是否存在
-	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
+	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseURL, version.Origin, runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
-		url = fmt.Sprintf("%s%s.%s-%s.zip", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
+		url = fmt.Sprintf("%s%s.%s-%s.zip", baseURL, version.Origin, runtime.GOOS, runtime.GOARCH)
 	}
 	head, code, err := http.Default().Head(url)
 	if err != nil {
@@ -142,7 +142,7 @@ func (g *Golang) Install(version *core.RemoteVersion) error {
 			runtime.GOOS,
 		)
 		// macOS 上的版本可能需要特殊处理
-		url = fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, "amd64")
+		url = fmt.Sprintf("%s%s.%s-%s.tar.gz", baseURL, version.Origin, runtime.GOOS, "amd64")
 		head, code, err = http.Default().Head(url)
 		if err != nil {
 			return err

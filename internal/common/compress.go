@@ -23,11 +23,12 @@ import (
 	"gvm/internal/log"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
-func UnTarGz(tarGzName string, dest string) error {
+func UnTarGz(tarGzName string, destDir string) error {
 	gzReader, err := os.Open(tarGzName)
 	defer func(gzReader *os.File) {
 		err := gzReader.Close()
@@ -44,13 +45,14 @@ func UnTarGz(tarGzName string, dest string) error {
 	if err != nil {
 		return err
 	}
-
+	defer func() {
+		_ = unGzStream.Close()
+	}()
 	tarStream := tar.NewReader(unGzStream)
-	absPath, err := filepath.Abs(dest)
+	absPath, err := filepath.Abs(destDir)
 	if err != nil {
 		return err
 	}
-
 	for {
 		hdr, err := tarStream.Next()
 		if errors.Is(err, io.EOF) {
@@ -59,37 +61,47 @@ func UnTarGz(tarGzName string, dest string) error {
 		if err != nil {
 			return err
 		}
-		fInfo := hdr.FileInfo()
+
 		fileName := hdr.Name
 		absFileName := filepath.Join(absPath, fileName)
-		log.Logger.Debugf("%s", absFileName)
+		log.Logger.Debugf("Extracting: %s", absFileName)
 
-		if fInfo.Mode().IsDir() {
-			if err := os.MkdirAll(absFileName, fInfo.Mode().Perm()); err != nil {
+		if err := os.MkdirAll(filepath.Dir(absFileName), 0755); err != nil {
+			return err
+		}
+
+		switch hdr.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(absFileName, os.FileMode(hdr.Mode)); err != nil {
 				return err
 			}
-			continue
-		}
-		file, err := os.OpenFile(absFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fInfo.Mode().Perm())
-		if err != nil {
-			return err
-		}
-
-		n, err := io.Copy(file, tarStream)
-		if e := file.Close(); e != nil {
-			return e
-		}
-		if err != nil {
-			return err
-		}
-		if n != fInfo.Size() {
-			return fmt.Errorf("file size mismatch, wrote %d, want %d", n, fInfo.Size())
+		case tar.TypeReg:
+			file, err := os.OpenFile(absFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(hdr.Mode))
+			if err != nil {
+				return err
+			}
+			n, err := io.Copy(file, tarStream)
+			if closeErr := file.Close(); closeErr != nil {
+				return closeErr
+			}
+			if err != nil {
+				return err
+			}
+			if n != hdr.Size {
+				return fmt.Errorf("file size mismatch: wrote %d, expected %d", n, hdr.Size)
+			}
+		case tar.TypeSymlink:
+			if err := os.Symlink(hdr.Linkname, absFileName); err != nil {
+				return fmt.Errorf("failed to create symlink %s -> %s: %v", absFileName, hdr.Linkname, err)
+			}
+		default:
+			log.Logger.Warnf("Unsupported tar entry type: %v (%s)", hdr.Typeflag, hdr.Name)
 		}
 	}
 	return nil
 }
 
-func UnZip(zipFile string, dest string) error {
+func UnZip(zipFile string, destDir string) error {
 	reader, err := zip.OpenReader(zipFile)
 	if err != nil {
 		return err
@@ -100,7 +112,7 @@ func UnZip(zipFile string, dest string) error {
 		}
 	}()
 
-	absPath, err := filepath.Abs(dest)
+	absPath, err := filepath.Abs(destDir)
 	if err != nil {
 		return err
 	}
@@ -147,6 +159,55 @@ func UnZip(zipFile string, dest string) error {
 		if n != f.FileInfo().Size() {
 			return fmt.Errorf("file size mismatch, wrote %d, want %d", n, f.FileInfo().Size())
 		}
+	}
+	return nil
+}
+
+func UnPkg(pkgPath, destDir string) error {
+	if _, err := exec.LookPath("xar"); err != nil {
+		return errors.New("xar command not found, please install it (macOS only)")
+	}
+	if _, err := exec.LookPath("pax"); err != nil {
+		return errors.New("pax command not found, please ensure it's available (macOS only)")
+	}
+
+	absDest, err := filepath.Abs(destDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve dest path: %w", err)
+	}
+	if err := os.MkdirAll(absDest, 0755); err != nil {
+		return fmt.Errorf("failed to create dest dir: %w", err)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "pkg-extract-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
+
+	cmd1 := exec.Command("xar", "-xf", pkgPath)
+	cmd1.Dir = tmpDir
+	cmd1.Stdout = os.Stdout
+	cmd1.Stderr = os.Stderr
+	if err := cmd1.Run(); err != nil {
+		return fmt.Errorf("xar extraction failed: %w", err)
+	}
+
+	payloadPath := filepath.Join(tmpDir, "Payload")
+	if _, err := os.Stat(payloadPath); os.IsNotExist(err) {
+		payloadPath = filepath.Join(tmpDir, "Content")
+		if _, err := os.Stat(payloadPath); err != nil {
+			return errors.New("no Payload or Content found in pkg")
+		}
+	}
+	cmd2 := exec.Command("pax", "-rzf", payloadPath)
+	cmd2.Dir = absDest
+	cmd2.Stdout = os.Stdout
+	cmd2.Stderr = os.Stderr
+	if err := cmd2.Run(); err != nil {
+		return fmt.Errorf("pax unpack failed: %w", err)
 	}
 	return nil
 }
