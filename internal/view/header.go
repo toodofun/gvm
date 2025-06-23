@@ -90,6 +90,9 @@ func (a *Application) readerHelp(kas *KeyActions) {
 				}
 
 				keyName := strings.ToLower(tcell.KeyNames[key])
+				if len(action.Opts.DisplayName) > 0 {
+					keyName = action.Opts.DisplayName
+				}
 				table.SetCell(
 					row,
 					col*2,

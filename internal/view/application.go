@@ -99,7 +99,7 @@ func (a *Application) IsTopDialog() bool {
 
 func (a *Application) bindKeys() {
 	a.actions.Merge(NewKeyActionsFromMap(KeyMap{
-		tcell.KeyCtrlC: NewKeyAction("Quit", a.quitCmd, true),
+		tcell.KeyCtrlC: NewKeyAction("Quit", a.quitCmd, false),
 	}))
 }
 

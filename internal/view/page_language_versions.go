@@ -56,11 +56,11 @@ func (p *PageLanguageVersions) Init(ctx context.Context) {
 			p.Render()
 			return evt
 		}, true),
-		tcell.KeyESC: NewKeyAction("Back", func(evt *tcell.EventKey) *tcell.EventKey {
+		tcell.KeyESC: NewKeyAction("Go back", func(evt *tcell.EventKey) *tcell.EventKey {
 			p.app.SwitchPage(pageLanguages)
 			return evt
 		}, true),
-		tcell.KeyEnter: NewKeyAction("Install/Set as default", func(evt *tcell.EventKey) *tcell.EventKey {
+		tcell.KeyEnter: NewKeyAction("Install or set as default", func(evt *tcell.EventKey) *tcell.EventKey {
 			v := p.GetSelection().(*version)
 			if v.isInstalled {
 				p.app.Confirm(fmt.Sprintf("Are you sure you want to set %s as default", v.Version.String()), func() {
@@ -89,7 +89,7 @@ func (p *PageLanguageVersions) Init(ctx context.Context) {
 			}
 			return evt
 		}, true),
-		tcell.KeyCtrlD: NewKeyAction("Uninstall", func(evt *tcell.EventKey) *tcell.EventKey {
+		tcell.KeyCtrlD: NewKeyAction("Uninstall selected", func(evt *tcell.EventKey) *tcell.EventKey {
 			v := p.GetSelection().(*version)
 			p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
 				p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
