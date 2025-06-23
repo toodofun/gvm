@@ -69,7 +69,7 @@ type Version struct {
 func (v *Version) ConvertToLTS() string {
 	switch val := v.LTS.(type) {
 	case bool:
-		if val == true {
+		if val {
 			return "LTS"
 		}
 		return ""
@@ -185,6 +185,7 @@ func unPackage(ctx context.Context, file, packageName, version string) error {
 	)
 	tagetPath := fmt.Sprintf("%s/%s", dest, languages.AllSuffix.Trim(packageName))
 
+	//nolint:errcheck,ineffassign,staticcheck
 	switch languages.AllSuffix.GetSuffix(packageName) {
 	case languages.Tar:
 		err = common.UnTarGz(ctx, file, dest)
@@ -235,7 +236,7 @@ func getPackageName(nodeInfo *Version, version *core.RemoteVersion) (string, err
 			packageType = fmt.Sprintf("darwin-%s.pkg", arch)
 			break
 		}
-		packageType = fmt.Sprintf("osx-x64-pkg.pkg")
+		packageType = "osx-x64-pkg.pkg"
 	default:
 		return "", fmt.Errorf("no supported architectures and platforms")
 	}

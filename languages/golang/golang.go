@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	goversion "github.com/hashicorp/go-version"
 	"gvm/internal/core"
 	"gvm/internal/http"
 	"gvm/internal/log"
@@ -29,6 +28,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	goversion "github.com/hashicorp/go-version"
 )
 
 const (

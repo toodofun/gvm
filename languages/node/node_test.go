@@ -16,12 +16,13 @@ package node
 
 import (
 	"context"
-	goversion "github.com/hashicorp/go-version"
-	"github.com/stretchr/testify/require"
 	"gvm/internal/core"
 	"os/exec"
 	"strings"
 	"testing"
+
+	goversion "github.com/hashicorp/go-version"
+	"github.com/stretchr/testify/require"
 )
 
 func TestListRemoteVersions(t *testing.T) {
@@ -69,6 +70,7 @@ func TestInstall(t *testing.T) {
 	}
 }
 
+//nolint:unused
 func equalVersion(execPath, expectedVersion string, expectedErr error, t *testing.T) {
 	cmd := exec.Command(execPath, "-v")
 	output, actualErr := cmd.Output()

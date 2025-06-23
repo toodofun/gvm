@@ -86,7 +86,7 @@ func UnTarGz(ctx context.Context, tarGzName string, dest string) error {
 		}
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			if err := os.MkdirAll(absFileName, os.FileMode(hdr.Mode)); err != nil {
+			if err = os.MkdirAll(absFileName, os.FileMode(hdr.Mode)); err != nil {
 				return err
 			}
 		case tar.TypeReg:
@@ -105,8 +105,8 @@ func UnTarGz(ctx context.Context, tarGzName string, dest string) error {
 				return fmt.Errorf("file size mismatch, wrote %d, want %d", n, fInfo.Size())
 			}
 		case tar.TypeSymlink:
-			if err := os.Symlink(hdr.Linkname, absFileName); err != nil {
-				return fmt.Errorf("failed to create symlink %s -> %s: %v", absFileName, hdr.Linkname, err)
+			if err = os.Symlink(hdr.Linkname, absFileName); err != nil {
+				return fmt.Errorf("failed to create symlink %s -> %s: %w", absFileName, hdr.Linkname, err)
 			}
 		default:
 			logger.Warnf("Unsupported tar entry type: %v (%s)", hdr.Typeflag, hdr.Name)
