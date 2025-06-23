@@ -128,17 +128,8 @@ func (n *Node) Uninstall(ctx context.Context, version string) error {
 func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger := log.GetLogger(ctx)
 	logger.Debugf("Install remote version: %s", version.Origin)
-
-	installed, err := n.ListInstalledVersions(ctx)
-	if err != nil {
-		logger.Errorf("Failed to list installed versions: %+v", err)
+	if err, exist := languages.HasInstall(ctx, n, *version.Version); err != nil || exist {
 		return err
-	}
-	for _, ver := range installed {
-		if ver.Version.Equal(version.Version) {
-			logger.Infof("Version %s already installed", version.Version.String())
-			return nil
-		}
 	}
 	nodeInfo, ok := n.versionMap[version.Origin]
 	if !ok {

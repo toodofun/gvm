@@ -115,19 +115,9 @@ func (g *Golang) Uninstall(ctx context.Context, version string) error {
 func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger := log.GetLogger(ctx)
 	logger.Debugf("Install remote version: %s", version.Origin)
-	// 检查是否已经安装
-	installed, err := g.ListInstalledVersions(ctx)
-	if err != nil {
-		logger.Errorf("Failed to list installed versions: %+v", err)
+	if err, exist := languages.HasInstall(ctx, g, *version.Version); err != nil || exist {
 		return err
 	}
-	for _, ver := range installed {
-		if ver.Version.Equal(version.Version) {
-			logger.Infof("Version %s already installed", version.Version.String())
-			return nil
-		}
-	}
-
 	logger.Infof("Installing version %s", version.Version.String())
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
