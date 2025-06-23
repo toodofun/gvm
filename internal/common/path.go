@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	Current = "Current"
+	Current = "current"
 )
 
 func GetLangRoot(lang string) string {
