@@ -27,7 +27,7 @@ type Application struct {
 	help    *tview.Flex
 	pages   *tview.Pages
 	lang    core.Language
-	pageMap map[string]Page
+	pageMap map[string]func() Page
 	actions *KeyActions
 
 	ctx context.Context
@@ -62,8 +62,8 @@ func (a *Application) HasAction(key tcell.Key) (KeyAction, bool) {
 }
 
 func (a *Application) SwitchPage(page string) {
-	p := a.pageMap[page]
-	a.pages.SwitchToPage(page)
+	p := a.pageMap[page]()
+	a.pages.AddPage(page, p, true, true)
 	p.Init(a.ctx)
 	a.readerHelp(p.GetKeyActions())
 }
@@ -72,13 +72,13 @@ func (a *Application) createMain() tview.Primitive {
 	main := tview.NewFlex().SetDirection(tview.FlexRow)
 	pages := tview.NewPages()
 
-	a.pageMap = map[string]Page{
-		pageLanguages:        NewPageLanguages(a),
-		pageLanguageVersions: NewPageLanguageVersions(a),
-	}
-
-	for name, page := range a.pageMap {
-		pages.AddPage(name, page, true, false)
+	a.pageMap = map[string]func() Page{
+		pageLanguages: func() Page {
+			return NewPageLanguages(a)
+		},
+		pageLanguageVersions: func() Page {
+			return NewPageLanguageVersions(a)
+		},
 	}
 
 	main.AddItem(pages, 0, 1, true)

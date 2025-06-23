@@ -214,7 +214,6 @@ func (t *SearchTable) command(cmd string) {
 		t.app.Stop()
 	case "log":
 		t.app.Info(fmt.Sprintf("LogPath: %s", log.GetLogPath()), t.table)
-
 	default:
 		t.app.Alert(fmt.Sprintf("command `%s` not found", cmd), t.table)
 	}
@@ -225,8 +224,7 @@ func (t *SearchTable) search(condition string) {
 	if len(condition) == 0 {
 		t.rows = t.model.Rows()
 	} else {
-		tmp := t.model.Rows()
-		t.rows = slice.Filter(tmp, func(index int, item []string) bool {
+		t.rows = slice.Filter(t.model.Rows(), func(index int, item []string) bool {
 			for _, row := range item {
 				if strings.Contains(strings.ToLower(row), strings.ToLower(condition)) {
 					return true
@@ -235,12 +233,6 @@ func (t *SearchTable) search(condition string) {
 			return false
 		})
 	}
-	t.Render()
-}
-
-func (t *SearchTable) Reset() {
-	t.condition = ""
-	t.rows = t.model.Rows()
 	t.Render()
 }
 

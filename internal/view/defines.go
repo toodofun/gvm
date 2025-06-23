@@ -33,7 +33,7 @@ const (
 
 const (
 	alertKey   = "alert"
-	infoKey = "info"
+	infoKey    = "info"
 	confirmKey = "confirm"
 	errorMsg   = `
   (\_/)    

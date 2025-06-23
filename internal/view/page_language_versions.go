@@ -67,7 +67,6 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 							if err := p.app.lang.SetDefaultVersion(context.Background(), v.Version.String()); err != nil {
 								return nil, err
 							}
-							p.app.SetFocus(p.table)
 							return nil, nil
 						}, func(i interface{}) {
 							p.refresh()
@@ -178,6 +177,7 @@ func (p *PageLanguageVersions) loadLanguageVersionsAsync(
 		defer func() {
 			p.app.QueueUpdateDraw(func() {
 				p.app.HideLoading(loading)
+				p.app.SetFocus(p.table)
 			})
 		}()
 
