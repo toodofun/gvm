@@ -20,7 +20,7 @@ import (
 	"gvm/internal/core"
 	"gvm/internal/env"
 	"gvm/internal/log"
-	"gvm/internal/utils/path"
+	"gvm/internal/util/path"
 	"os"
 	"path/filepath"
 
