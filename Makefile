@@ -30,7 +30,7 @@ COVERAGE := 20
 SHELL := /bin/bash
 DOCKER := docker
 
-# docker command settings
+# Docker command settings
 REGISTRY_PREFIX ?= "ghcr.io"
 IMAGE ?= "toodofun/gvm"
 VERSION ?= $(shell git describe --tags)
