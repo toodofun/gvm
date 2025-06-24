@@ -29,7 +29,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 	"strings"
 
 	goversion "github.com/hashicorp/go-version"
@@ -146,7 +145,26 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 		return err
 	}
 	if code != 200 {
-		return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
+		if runtime.GOOS == "darwin" && code == 404 {
+			url = strings.ReplaceAll(url, runtime.GOARCH, "x64")
+			name = strings.ReplaceAll(name, runtime.GOARCH, "x64")
+			logger.Infof(
+				"Version %s not found for %s/%s, trying %s/x64",
+				version.Version.String(),
+				runtime.GOOS,
+				runtime.GOARCH,
+				runtime.GOOS,
+			)
+			head, code, err = http.Default().Head(ctx, url)
+			if err != nil {
+				return err
+			}
+			if code != 200 {
+				return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
+			}
+		} else {
+			return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
+		}
 	}
 
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
@@ -216,18 +234,9 @@ func getPackageName(nodeInfo *Version, version *core.RemoteVersion) (string, err
 	case "linux":
 		packageType = fmt.Sprintf("%s-%s.tar.gz", runtime.GOOS, arch)
 	case "windows":
-		packageType = fmt.Sprintf("win-%s-zip.zip", arch)
+		packageType = fmt.Sprintf("win-%s.zip", arch)
 	case "darwin":
-		if arch == "arm64" {
-			majorVer := strings.Split(version.Version.String(), ".")[0]
-			major, _ := strconv.Atoi(majorVer)
-			if major < 16 {
-				return "", fmt.Errorf("%v M1 support starts from v16", major)
-			}
-			packageType = fmt.Sprintf("darwin-%s.pkg", arch)
-			break
-		}
-		packageType = "osx-x64-pkg.pkg"
+		packageType = fmt.Sprintf("darwin-%s.tar.gz", arch)
 	default:
 		return "", fmt.Errorf("no supported architectures and platforms")
 	}
