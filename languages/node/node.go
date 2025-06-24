@@ -109,6 +109,9 @@ func (n *Node) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, e
 }
 
 func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
+	if runtime.GOOS == "windows" {
+		return languages.NewLanguage(n).ListInstalledVersions(ctx, filepath.Join(lang))
+	}
 	return languages.NewLanguage(n).ListInstalledVersions(ctx, filepath.Join(lang, "bin"))
 }
 
