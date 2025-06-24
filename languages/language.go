@@ -54,13 +54,12 @@ func (l *Language) SetDefaultVersion(ctx context.Context, version string) error 
 	source := filepath.Join(path.GetLangRoot(l.lang.Name()), version)
 	target := filepath.Join(path.GetLangRoot(l.lang.Name()), path.Current)
 
-	// 检查是否加入了环境变量
 	pathManager, err := env.NewPathManager()
 	if err != nil {
 		return fmt.Errorf("get path manager error: %w", err)
 	}
 
-	if err = pathManager.AddIfNotExists(filepath.Join(target, "go", "bin"), env.PositionPrepend); err != nil {
+	if err = pathManager.AddIfNotExists(filepath.Join(target, l.lang.Name(), "bin"), env.PositionPrepend); err != nil {
 		return fmt.Errorf("add to path error: %w", err)
 	}
 

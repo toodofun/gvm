@@ -55,7 +55,7 @@ Use "gvm [command] --help" for more information about a command.
 
 ## 🐍&nbsp; 支持的编程语言
 - [x] Golang
-- [ ] Node
+- [x] Node
 - [ ] Java
 - [ ] Python
 - [ ] C#
