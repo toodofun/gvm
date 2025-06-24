@@ -84,7 +84,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY_PREFIX }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.REPO_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build docker images for host arch and push images to registry
         run: |
