@@ -2,6 +2,16 @@ name: lint and Test
 
 on: [push, pull_request]
 
+env:
+  GO_VERSION: '1.24'
+  REGISTRY_PREFIX: ghcr.io
+  DOCKER_COMPOSE_VERSION: v2.21.0
+  DOCKER_FILE: Dockerfile.dev
+
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   lint_and_test:
     name: Lint and Test - ${{ matrix.go-version }}
@@ -10,8 +20,6 @@ jobs:
         go-version: [1.24.x, 1.23.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
-    environment:
-      name: gvm-ci
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -19,7 +27,7 @@ jobs:
           go-version: ${{ matrix.go-version }}
           cache: false
 
-      - name: Check out code into the Go module directory
+      - name: "Checkout ${{ github.ref }}"
         uses: actions/checkout@v4
 
       - name: Install tools
@@ -48,3 +56,36 @@ jobs:
           files: _output/coverage.out
         if: |
           matrix.go-version == '1.23.x'
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint_and_test]
+    environment:
+      name: gvm-ci
+    steps:
+      - name: "Checkout ${{ github.ref }}"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set version variables to shared
+        run: echo "VERSION=DEVELOP_$(git describe --tags --always)" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY_PREFIX }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build docker images for host arch and push images to registry
+        run: |
+          make image.build.$(go env GOOS)_$(go env GOARCH)
