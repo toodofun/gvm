@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"gvm/internal/core"
 	"gvm/internal/log"
-	"gvm/internal/utils/env"
-	"gvm/internal/utils/path"
+	"gvm/internal/util/env"
+	"gvm/internal/util/path"
 	"os"
 	"path/filepath"
 
