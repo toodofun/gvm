@@ -17,7 +17,7 @@ package cmd
 import (
 	"fmt"
 	"gvm/internal/core"
-	"gvm/internal/utils/color"
+	"gvm/internal/util/color"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"

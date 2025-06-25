@@ -3,7 +3,7 @@
 	<p>GVM is a programming language version manager, like `nvm`, but extensible to support all programming languages.</p>
 </div>
 
-![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/go.yml/badge.svg)
+![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/gvm.yml/badge.svg)
 [![GitHub License](https://img.shields.io/github/license/toodofun/gvm)](https://github.com/toodofun/gvm)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/toodofun/gvm)](https://goreportcard.com/report/github.com/toodofun/gvm)

@@ -93,6 +93,7 @@ func TestNewRootCmd(t *testing.T) {
 		"uninstall",
 		"current",
 		"ui",
+		"version",
 	}
 
 	if len(cmd.Commands()) != len(expectedSubCommands) {

@@ -12,22 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-FROM golang:1.24.1-alpine3.21 AS build
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.8
 
 LABEL maintainer="toodofun@toodofun.com"
 
-ENV GOPATH=/go
-ENV CGO_ENABLED=0
+ARG TARGETARCH
 
-RUN apk add -U --no-cache ca-certificates
-RUN apk add -U curl
-RUN curl -s -q https://raw.githubusercontent.com/toodofun/gvm/master/LICENSE -o /go/LICENSE
-RUN go install -v -ldflags "$(go run scripts/gen-ldflags.go)" "github.com/toodofun/gvm@latest"
+COPY _output/gvm-${TARGETARCH} /usr/bin/gvm
+COPY LICENSE /licenses/LICENSE
 
-FROM alpine:3.18
-
-COPY --from=build /go/bin/gvm  /usr/bin/gvm
-COPY --from=build /go/LICENSE /licenses/LICENSE
+RUN  \
+     microdnf update --nodocs --assumeyes && \
+     microdnf install ca-certificates --nodocs --assumeyes && \
+     microdnf clean all
 
 ENTRYPOINT ["gvm"]

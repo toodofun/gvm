@@ -21,8 +21,8 @@ import (
 	"gvm/internal/core"
 	"gvm/internal/http"
 	"gvm/internal/log"
-	common "gvm/internal/utils/compress"
-	"gvm/internal/utils/slice"
+	common "gvm/internal/util/compress"
+	"gvm/internal/util/slice"
 	"path/filepath"
 
 	"gvm/languages"

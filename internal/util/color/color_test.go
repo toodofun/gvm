@@ -18,7 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	mycolor "gvm/internal/utils/color"
+	mycolor "gvm/internal/util/color"
 
 	"github.com/fatih/color"
 )

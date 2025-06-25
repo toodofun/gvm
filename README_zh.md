@@ -3,7 +3,7 @@
 	<p>GVM 是一个编程语言版本管理器，类似于 `nvm`，但可扩展以支持所有编程语言。</p>
 </div>
 
-![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/go.yml/badge.svg)
+![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/gvm.yml/badge.svg)
 [![GitHub License](https://img.shields.io/github/license/toodofun/gvm)](https://github.com/toodofun/gvm)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/toodofun/gvm)](https://goreportcard.com/report/github.com/toodofun/gvm)
