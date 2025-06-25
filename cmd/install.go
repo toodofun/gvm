@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"gvm/internal/core"
 	"gvm/internal/log"
-	"gvm/internal/utils/match"
+	"gvm/internal/util/match"
 
 	vers "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"

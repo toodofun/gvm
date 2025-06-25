@@ -16,24 +16,37 @@
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: build
+all: tidy add-copyright format lint cover build
 
-NAME ?= gvm
-OS_LIST = linux darwin windows
-ARCH_LIST = amd64 arm64
-SHELL := /bin/bash
+# ==============================================================================
+# Build options
 
 GO := go
-ROOT_DIR=.
+OS = linux darwin windows
+ARCH_LIST = amd64 arm64
+NAME = gvm
 ROOT_PACKAGE=github.com/toodofun/gvm
+COVERAGE := 20
+SHELL := /bin/bash
+DOCKER := docker
+
+# Docker command settings
+REGISTRY_PREFIX ?= "ghcr.io"
+IMAGE ?= "toodofun/gvm"
+VERSION ?= $(shell git describe --tags)
+TAG := $(REGISTRY_PREFIX)/$(IMAGE):$(VERSION)
+DOCKER_FILE ?= "Dockerfile.dev"
+DOCKER_BUILD_ARG_RELEASE ?= $(VERSION)
+DOCKER_MULTI_ARCH ?= linux/amd64,linux/arm64
 
 # Linux command settings
-FIND := find .
+FIND := find . ! -path './vendor/*'
 XARGS := xargs -r
+COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
-VERSION ?= $(shell cat VERSION)
-
-GO_FLAGS ?= -s -w -X 'gvm/core.Version=$(VERSION)'
+ifeq ($(origin ROOT_DIR),undefined)
+ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR) && pwd -P))
+endif
 
 # Create output directory
 ifeq ($(origin OUTPUT_DIR),undefined)
@@ -41,23 +54,16 @@ OUTPUT_DIR := $(ROOT_DIR)/_output
 $(shell mkdir -p $(OUTPUT_DIR))
 endif
 
-# Minimum test coverage
-ifeq ($(origin COVERAGE),undefined)
-# prod
-#COVERAGE := 60
-# develop
-COVERAGE := 0.0
-endif
+GO_LDFLAGS := $(shell $(GO) run $(ROOT_DIR)/scripts/gen-ldflags.go)
+GO_BUILD_FLAGS = --ldflags "$(GO_LDFLAGS)"
+
+# ==============================================================================
+# Includes
 
 include scripts/Makefile.tools.mk
 
-.PHONY: deps
-deps:
-	@go mod download
-
-.PHONY: release
-release:
-	@docker buildx build -f Dockerfile --output type=local,dest=bin .
+# ==============================================================================
+# Targets
 
 ## lint: Check syntax and styling of go sources.
 .PHONY: lint
@@ -100,74 +106,63 @@ verify-copyright: tools.verify.licctl
 add-copyright: tools.verify.licctl
 	@licctl -v -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github,.idea
 
-## tools: install dependent tools.
+## build: generate releases for unix and windows systems
+.PHONY: build
+build: clean tidy
+	@echo "===========> build flags=$(GO_BUILD_FLAGS)"
+	@for arch in $(ARCH_LIST); do \
+		for os in $(OS); do \
+			echo "Building $$os-$$arch"; \
+			ext=""; \
+			if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
+			CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch $(GO) build $(GO_BUILD_FLAGS) -o $(OUTPUT_DIR)/$(NAME)-$$os-$$arch$$ext .; \
+		done \
+	done
+
+## image.build.%: Docker build for image
+.PHONY: image.build.%
+image.build.%: build
+	$(eval PLATFORM := $(word 1,$(subst ., ,$*)))
+	$(eval OS := $(word 1,$(subst _, ,$(PLATFORM))))
+	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
+	@echo "===========> Building and Pushing $(TAG) for $(OS) $(ARCH) $(ROOT_DIR)/$(DOCKER_FILE)"
+	@${DOCKER} buildx build --push -t $(TAG) --build-arg TARGETARCH=${OS}-${ARCH} --build-arg RELEASE=${DOCKER_BUILD_ARG_RELEASE} \
+ 		--platform $(DOCKER_MULTI_ARCH) -f $(ROOT_DIR)/$(DOCKER_FILE)  $(ROOT_DIR)
+
+## image.push: Push docker mirror repository
+.PHONY: image.push
+image.push:
+	@echo "===========> Pushing image $(TAG)"
+	@${DOCKER} push $(TAG)
+
+## tools: Install dependent tools.
 .PHONY: tools
 tools:
 	@$(MAKE) tools.install
 
-## Build targets for each OS/ARCH combination
-.PHONY: build
-build:
-	@echo "Building $(NAME) with GO_FLAGS=$(GO_FLAGS)"
-	@$(foreach os,$(OS_LIST),\
-		$(foreach arch,$(ARCH_LIST),\
-			$(call build_target,$(os),$(arch))\
-		)\
-	)
+## deps: Download all Go module dependencies listed in go.mod
+.PHONY: deps
+deps:
+	@$(GO) mod download
 
-## Function to build for specific OS/ARCH
-define build_target
-	@echo "Building $(1)-$(2)"
-	$(if $(filter windows,$(1)),\
-		GOOS=$(1) GOARCH=$(2) go build -ldflags "$(GO_FLAGS)" -o $(OUTPUT_DIR)/$(NAME)-$(1)-$(2).exe . && \
-		cd $(OUTPUT_DIR) && \
-		tar zcvf $(NAME)-$(1)-$(2).tar.gz $(NAME)-$(1)-$(2).exe && \
-		rm $(NAME)-$(1)-$(2).exe && \
-		cd - > /dev/null,\
-		GOOS=$(1) GOARCH=$(2) go build -ldflags "$(GO_FLAGS)" -o $(OUTPUT_DIR)/$(NAME)-$(1)-$(2) . && \
-		cd $(OUTPUT_DIR) && \
-		tar zcvf $(NAME)-$(1)-$(2).tar.gz $(NAME)-$(1)-$(2) && \
-		rm $(NAME)-$(1)-$(2) && \
-		cd - > /dev/null\
-	)
-endef
+## check-updates: Check for available updates of direct Go module dependencies
+.PHONY: check-updates
+check-updates: tools.verify.go-mod-outdated
+	@$(GO) list -u -m -json all | go-mod-outdated -update -direct
 
-## Build for specific OS
-.PHONY: build-linux build-darwin build-windows
-build-linux:
-	@echo "Building $(NAME) for Linux"
-	@$(foreach arch,$(ARCH_LIST),$(call build_target,linux,$(arch)))
-
-build-darwin:
-	@echo "Building $(NAME) for macOS"
-	@$(foreach arch,$(ARCH_LIST),$(call build_target,darwin,$(arch)))
-
-build-windows:
-	@echo "Building $(NAME) for Windows"
-	@$(foreach arch,$(ARCH_LIST),$(call build_target,windows,$(arch)))
-
-## Build for specific architecture
-.PHONY: build-amd64 build-arm64
-build-amd64:
-	@echo "Building $(NAME) for amd64"
-	@$(foreach os,$(OS_LIST),$(call build_target,$(os),amd64))
-
-build-arm64:
-	@echo "Building $(NAME) for arm64"
-	@$(foreach os,$(OS_LIST),$(call build_target,$(os),arm64))
-
-## Clean build directory
+## clean: Install dependent tools.
 .PHONY: clean
-clean:
-	@echo "Cleaning $(OUTPUT_DIR)"
-	@rm -rf $(OUTPUT_DIR)
-	@echo "Cleaning test data"
-	@rm -rf coverage.out
+clean: ## Remove building artifacts
+	@echo "===========> Cleaning all build output"
+	rm -rf $(OUTPUT_DIR)/*
 
+## tidy: Clean up go.mod and go.sum by removing unused dependencies and adding missing ones
 .PHONY: tidy
 tidy:
 	@$(GO) mod tidy
 
+## help: Show this help info.
 .PHONY: help
-help:  ## Show this help
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}'
+help: Makefile
+	@printf "\nUsage: make <TARGETS> <OPTIONS> ...\n\nTargets:\n"
+	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'

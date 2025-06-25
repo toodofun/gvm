@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"gvm/internal/core"
-	gvmpath "gvm/internal/utils/path"
+	gvmpath "gvm/internal/util/path"
 )
 
 // mock root dir for testing
