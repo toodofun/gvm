@@ -41,6 +41,12 @@ func NewEnvManager() *Manager {
 	return &Manager{}
 }
 
+type KV struct {
+	Key    string
+	Value  string
+	Append bool
+}
+
 func (m *Manager) AppendEnv(key, value string) error {
 	if len(value) == 0 {
 		return fmt.Errorf("value is empty")
@@ -61,9 +67,7 @@ func (m *Manager) AppendEnv(key, value string) error {
 		valueList = []string{value}
 	}
 
-	if runtime.GOOS == "windows" {
-		valueList = append(valueList, "%"+key+"%")
-	} else {
+	if runtime.GOOS != "windows" {
 		valueList = append(valueList, "$"+key)
 	}
 	// 去重
@@ -95,9 +99,7 @@ func (m *Manager) RemoveEnv(key, value string) error {
 	if len(newValueList) == 0 {
 		return m.DeleteEnv(key)
 	}
-	if runtime.GOOS == "windows" {
-		newValueList = append(newValueList, "%"+key+"%")
-	} else {
+	if runtime.GOOS != "windows" {
 		newValueList = append(newValueList, "$"+key)
 	}
 	// 去重
@@ -108,7 +110,7 @@ func (m *Manager) RemoveEnv(key, value string) error {
 
 func (m *Manager) quoteValue(value string) string {
 	// 如果值包含空格或特殊字符，需要加引号
-	if strings.ContainsAny(value, " \t\n\r\"'\\$`") {
+	if strings.ContainsAny(value, " \t\n\r\"'\\$`") && !strings.Contains(value, pathSeparator) {
 		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
 	}
 	return value

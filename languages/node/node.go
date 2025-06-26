@@ -22,6 +22,7 @@ import (
 	"gvm/internal/http"
 	"gvm/internal/log"
 	common "gvm/internal/util/compress"
+	"gvm/internal/util/env"
 	"gvm/internal/util/path"
 	"gvm/internal/util/slice"
 	"path/filepath"
@@ -116,10 +117,11 @@ func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVers
 }
 
 func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
-	envs := []core.KV{
+	envs := []env.KV{
 		{
-			Key:   "PATH",
-			Value: filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin"),
+			Key:    "PATH",
+			Value:  filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin"),
+			Append: true,
 		},
 	}
 	return languages.NewLanguage(n).SetDefaultVersion(ctx, version, envs)

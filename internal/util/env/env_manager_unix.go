@@ -41,6 +41,7 @@ func (m *Manager) GetEnv(key string) (string, error) {
 }
 
 func (m *Manager) SetEnv(key, value string) error {
+	value = m.quoteValue(value)
 	if err := m.setGvmEnv(key, value); err != nil {
 		return err
 	}

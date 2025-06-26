@@ -36,7 +36,7 @@ func NewLanguage(lang core.Language) *Language {
 	return &Language{lang: lang}
 }
 
-func (l *Language) SetDefaultVersion(ctx context.Context, version string, envs []core.KV) error {
+func (l *Language) SetDefaultVersion(ctx context.Context, version string, envs []env.KV) error {
 	versions, err := l.lang.ListInstalledVersions(ctx)
 	if err != nil {
 		return err
@@ -57,8 +57,14 @@ func (l *Language) SetDefaultVersion(ctx context.Context, version string, envs [
 	em := env.NewEnvManager()
 
 	for _, kv := range envs {
-		if err = em.AppendEnv(kv.Key, kv.Value); err != nil {
-			return fmt.Errorf("add to env (%s, %s) error: %w", kv.Key, kv.Value, err)
+		if kv.Append {
+			if err = em.AppendEnv(kv.Key, kv.Value); err != nil {
+				return fmt.Errorf("add to env (%s, %s) error: %w", kv.Key, kv.Value, err)
+			}
+		} else {
+			if err = em.SetEnv(kv.Key, kv.Value); err != nil {
+				return fmt.Errorf("set env (%s, %s) error: %w", kv.Key, kv.Value, err)
+			}
 		}
 	}
 
