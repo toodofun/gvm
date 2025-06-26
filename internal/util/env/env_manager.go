@@ -67,12 +67,14 @@ func (m *Manager) AppendEnv(key, value string) error {
 		valueList = []string{value}
 	}
 
+	slice.Sort(valueList)
+
 	if runtime.GOOS != "windows" {
 		valueList = append(valueList, "$"+key)
 	}
+
 	// 去重
 	valueList = slice.Unique(valueList)
-	slice.Sort(valueList)
 	return m.SetEnv(key, strings.Join(valueList, pathSeparator))
 }
 
@@ -99,12 +101,14 @@ func (m *Manager) RemoveEnv(key, value string) error {
 	if len(newValueList) == 0 {
 		return m.DeleteEnv(key)
 	}
+
+	slice.Sort(newValueList)
+
 	if runtime.GOOS != "windows" {
 		newValueList = append(newValueList, "$"+key)
 	}
 	// 去重
 	newValueList = slice.Unique(newValueList)
-	slice.Sort(newValueList)
 	return m.SetEnv(key, strings.Join(newValueList, pathSeparator))
 }
 
