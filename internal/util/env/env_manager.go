@@ -67,8 +67,6 @@ func (m *Manager) AppendEnv(key, value string) error {
 		valueList = []string{value}
 	}
 
-	slice.Sort(valueList)
-
 	if runtime.GOOS != "windows" {
 		valueList = append(valueList, "$"+key)
 	}
@@ -101,8 +99,6 @@ func (m *Manager) RemoveEnv(key, value string) error {
 	if len(newValueList) == 0 {
 		return m.DeleteEnv(key)
 	}
-
-	slice.Sort(newValueList)
 
 	if runtime.GOOS != "windows" {
 		newValueList = append(newValueList, "$"+key)
