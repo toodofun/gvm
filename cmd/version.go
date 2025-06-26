@@ -33,7 +33,7 @@ func NewCmdVersion() *cobra.Command {
 			"\n\t\t gvm version",
 		Run: func(cmd *cobra.Command, args []string) {
 			versionInfo := version.Get()
-			_, _ = fmt.Fprintln(os.Stdout, fmt.Sprintf("%#v", versionInfo))
+			_, _ = fmt.Fprintf(os.Stdout, "%#v\n", versionInfo)
 		},
 	}
 	return cmd
