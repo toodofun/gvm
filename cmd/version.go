@@ -15,10 +15,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"gvm/internal/util/version"
 	"os"
+
+	"github.com/toodofun/gvm/internal/util/version"
 
 	"github.com/spf13/cobra"
 )
@@ -31,14 +31,9 @@ func NewCmdVersion() *cobra.Command {
 		Long:  "Print version information for the current context",
 		Example: "Print versions for the current context " +
 			"\n\t\t gvm version",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			versionInfo := version.Get()
-			marshaled, err := json.MarshalIndent(&versionInfo, "", "  ")
-			if err != nil {
-				return err
-			}
-			_, _ = fmt.Fprintln(os.Stdout, string(marshaled))
-			return nil
+			_, _ = fmt.Fprintln(os.Stdout, fmt.Sprintf("%#v", versionInfo))
 		},
 	}
 	return cmd
