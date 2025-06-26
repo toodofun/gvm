@@ -85,8 +85,8 @@ jobs:
     needs: [releases-linux-binaries]
     env:
       DOCKER_BUILD_ARG_RELEASE: ${{ github.ref_name }}
-      REGISTRY_PREFIX: huhouhua
-      IMAGE: glctl
+      REGISTRY_PREFIX: toodofun
+      IMAGE: gvm
     strategy:
       matrix:
         go_version: ['1.24']
