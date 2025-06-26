@@ -16,9 +16,14 @@ package http
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"resty.dev/v3"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
@@ -79,43 +84,96 @@ func TestHead(t *testing.T) {
 	c := Default()
 	ctx := context.Background()
 
-	// 测试正常请求，使用一个确定存在的URL
-	headers, status, err := c.Head(ctx, "https://httpbingo.org/get")
-	assert.NoError(t, err)
-	assert.Greater(t, status, 0)
-	assert.NotNil(t, headers)
+	// 模拟一个正常返回 HEAD 请求的服务器
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.Header().Set("X-Test-Header", "value")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}))
+	defer server.Close()
 
-	// 测试请求错误
-	_, _, err = c.Head(ctx, "http://invalid.url")
+	// 测试正常请求
+	headers, status, err := c.Head(ctx, server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, status)
+	assert.Equal(t, "value", headers.Get("X-Test-Header"))
+
+	// 模拟错误的地址（server 关闭后的地址等效于无效 URL）
+	badServer := httptest.NewUnstartedServer(nil)
+	_, _, err = c.Head(ctx, badServer.URL)
 	assert.Error(t, err)
+}
+
+func TestClient_Get(t *testing.T) {
+	ctx := context.Background()
+
+	// 模拟响应内容
+	content := []byte("hello world")
+
+	// 启动本地 HTTP 服务
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(content)
+	}))
+	defer server.Close()
+
+	// 构建 Client
+	c := &Client{
+		resty: resty.New(),
+		cache: cache.New(5*time.Minute, 10*time.Minute),
+	}
+
+	// 第一次请求，不命中缓存
+	data, err := c.Get(ctx, server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, content, data)
+
+	// 第二次请求，应命中缓存（可通过日志或缓存验证）
+	dataCached, err := c.Get(ctx, server.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, content, dataCached)
 }
 
 // Download 单测示例，简单测试创建目录和下载失败场景
 func TestDownload(t *testing.T) {
 	c := Default()
 	ctx := context.Background()
-
 	tmpDir := t.TempDir()
 
+	// 模拟一个 HTTP 文件服务器
+	testContent := []byte("0123456789") // 10字节内容
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(testContent)
+	}))
+	defer server.Close()
+
 	// 测试目录创建失败（试图写入非法目录）
-	_, err := c.Download(ctx, "https://example.com/file", "/root/invalid-dir", "file.txt")
+	_, err := c.Download(ctx, server.URL, "/root/invalid-dir", "file.txt")
 	assert.Error(t, err)
 
-	// 测试下载失败（无效URL）
-	_, err = c.Download(ctx, "http://invalid.url/file", tmpDir, "file.txt")
+	// 测试下载失败（模拟 404）
+	badServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.NotFound(w, r)
+	}))
+	defer badServer.Close()
+
+	_, err = c.Download(ctx, badServer.URL, tmpDir, "file.txt")
 	assert.Error(t, err)
 
-	// 测试成功路径，模拟一个小文件下载（使用 httpbin.org）
-	url := "https://httpbingo.org/bytes/10"
+	// 测试成功路径
 	filename := "testfile.dat"
 	filepath := filepath.Join(tmpDir, filename)
 
-	resultPath, err := c.Download(ctx, url, tmpDir, filename)
+	resultPath, err := c.Download(ctx, server.URL, tmpDir, filename)
 	assert.NoError(t, err)
 	assert.Equal(t, filepath, resultPath)
 
 	// 文件确实被创建且大小为10字节
 	fi, err := os.Stat(filepath)
 	assert.NoError(t, err)
-	assert.Equal(t, int64(10), fi.Size())
+	assert.Equal(t, int64(len(testContent)), fi.Size())
 }
