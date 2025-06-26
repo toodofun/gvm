@@ -76,9 +76,9 @@ func (g *Golang) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion,
 	}
 
 	for _, v := range versions {
-		comment := "Stable Release"
-		if !v.Stable {
-			comment = "Unstable Release"
+		comment := ""
+		if v.Stable {
+			comment = "Stable Release"
 		}
 		ver, err := goversion.NewVersion(strings.TrimPrefix(v.Version, "go"))
 		if err != nil {
