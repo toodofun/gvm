@@ -106,7 +106,7 @@ func TestSearchTable_GetSelection(t *testing.T) {
 	assert.Equal(t, []string{"Alice", "30"}, val)
 
 	st.Select(0, 0) // select header row
-	val, ok = st.GetSelection()
+	_, ok = st.GetSelection()
 	assert.False(t, ok)
 }
 
