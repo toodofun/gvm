@@ -12,25 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package golang
+package view
 
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/gdamore/tcell/v2"
 )
 
-func TestGolang_ListRemoteVersions(t *testing.T) {
-	golang := &Golang{}
-	remoteVersions, err := golang.ListRemoteVersions(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, remoteVersions)
-}
+func TestApplication_Run(t *testing.T) {
+	screen := tcell.NewSimulationScreen("UTF-8")
+	if err := screen.Init(); err != nil {
+		t.Fatalf("failed to init simulation screen: %v", err)
+	}
 
-func TestGolang_ListInstalledVersions(t *testing.T) {
-	golang := &Golang{}
-	installedVersions, err := golang.ListInstalledVersions(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, installedVersions)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	errCh := make(chan error)
+	app := CreateApplication(ctx)
+	app.SetScreen(screen)
+
+	go func() {
+		if err := app.Run(); err != nil {
+			errCh <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		app.Stop()
+	case err := <-errCh:
+		t.Errorf("application run error: %s", err)
+		app.Stop()
+	}
 }
