@@ -177,7 +177,8 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	}
 
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
-	file, err := http.Default().Download(ctx, url, filepath.Join(core.GetRootDir(), lang, version.Version.String()), name)
+	file, err := http.Default().
+		Download(ctx, url, filepath.Join(core.GetRootDir(), lang, version.Version.String()), name)
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
