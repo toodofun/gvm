@@ -62,7 +62,6 @@ Use "gvm [command] --help" for more information about a command.
 - [ ] C++/C
 - [ ] Ruby
 - [ ] Rust
-- [ ] TypeScript
 
 ## 🌈&nbsp; Screenshots
 ### Languages Page
