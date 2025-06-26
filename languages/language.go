@@ -36,7 +36,7 @@ func NewLanguage(lang core.Language) *Language {
 	return &Language{lang: lang}
 }
 
-func (l *Language) SetDefaultVersion(ctx context.Context, version string) error {
+func (l *Language) SetDefaultVersion(ctx context.Context, version string, envs []env.KV) error {
 	versions, err := l.lang.ListInstalledVersions(ctx)
 	if err != nil {
 		return err
@@ -54,13 +54,18 @@ func (l *Language) SetDefaultVersion(ctx context.Context, version string) error 
 	source := filepath.Join(path.GetLangRoot(l.lang.Name()), version)
 	target := filepath.Join(path.GetLangRoot(l.lang.Name()), path.Current)
 
-	pathManager, err := env.NewPathManager()
-	if err != nil {
-		return fmt.Errorf("get path manager error: %w", err)
-	}
+	em := env.NewEnvManager()
 
-	if err = pathManager.AddIfNotExists(filepath.Join(target, l.lang.Name(), "bin"), env.PositionPrepend); err != nil {
-		return fmt.Errorf("add to path error: %w", err)
+	for _, kv := range envs {
+		if kv.Append {
+			if err = em.AppendEnv(kv.Key, kv.Value); err != nil {
+				return fmt.Errorf("add to env (%s, %s) error: %w", kv.Key, kv.Value, err)
+			}
+		} else {
+			if err = em.SetEnv(kv.Key, kv.Value); err != nil {
+				return fmt.Errorf("set env (%s, %s) error: %w", kv.Key, kv.Value, err)
+			}
+		}
 	}
 
 	if !path.IsPathExist(source) {

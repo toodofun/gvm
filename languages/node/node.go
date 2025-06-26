@@ -22,12 +22,13 @@ import (
 	"gvm/internal/http"
 	"gvm/internal/log"
 	common "gvm/internal/util/compress"
+	"gvm/internal/util/env"
+	"gvm/internal/util/path"
 	"gvm/internal/util/slice"
 	"path/filepath"
 
 	"gvm/languages"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 
@@ -116,7 +117,18 @@ func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVers
 }
 
 func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
-	return languages.NewLanguage(n).SetDefaultVersion(ctx, version)
+	binPath := filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin")
+	if runtime.GOOS == "windows" {
+		binPath = filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node")
+	}
+	envs := []env.KV{
+		{
+			Key:    "PATH",
+			Value:  binPath,
+			Append: true,
+		},
+	}
+	return languages.NewLanguage(n).SetDefaultVersion(ctx, version, envs)
 }
 
 func (n *Node) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
@@ -171,7 +183,8 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	}
 
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
-	file, err := http.Default().Download(ctx, url, path.Join(core.GetRootDir(), lang, version.Version.String()), name)
+	file, err := http.Default().
+		Download(ctx, url, filepath.Join(core.GetRootDir(), lang, version.Version.String()), name)
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
@@ -183,14 +196,14 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
-		path.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
+		filepath.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
 	)
 	return nil
 }
 
 func unPackage(ctx context.Context, file, packageName, version string) error {
 	logger := log.GetLogger(ctx)
-	dest := path.Join(core.GetRootDir(), lang, version)
+	dest := filepath.Join(core.GetRootDir(), lang, version)
 	var (
 		err      error
 		fileInfo os.FileInfo

@@ -22,6 +22,7 @@ import (
 	"gvm/internal/http"
 	"gvm/internal/log"
 	"gvm/internal/util/compress"
+	"gvm/internal/util/env"
 	"gvm/internal/util/path"
 	"gvm/internal/util/slice"
 	"gvm/languages"
@@ -101,7 +102,18 @@ func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
-	return languages.NewLanguage(g).SetDefaultVersion(ctx, version)
+	envs := []env.KV{
+		{
+			Key:    "PATH",
+			Value:  filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go", "bin"),
+			Append: true,
+		},
+		{
+			Key:   "GOPATH",
+			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go"),
+		},
+	}
+	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
 }
 
 func (g *Golang) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
