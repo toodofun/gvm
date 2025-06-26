@@ -42,3 +42,8 @@ var GetRootDir = func() string {
 	}
 	return rootDir
 }
+
+type KV struct {
+	Key   string
+	Value string
+}

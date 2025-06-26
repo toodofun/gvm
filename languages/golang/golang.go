@@ -101,7 +101,17 @@ func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
-	return languages.NewLanguage(g).SetDefaultVersion(ctx, version)
+	envs := []core.KV{
+		{
+			Key:   "PATH",
+			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go", "bin"),
+		},
+		{
+			Key:   "GOPATH",
+			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go"),
+		},
+	}
+	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
 }
 
 func (g *Golang) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
