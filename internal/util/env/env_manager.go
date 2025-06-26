@@ -109,6 +109,9 @@ func (m *Manager) RemoveEnv(key, value string) error {
 }
 
 func (m *Manager) quoteValue(value string) string {
+	if runtime.GOOS == "windows" {
+		return value
+	}
 	// 如果值包含空格或特殊字符，需要加引号
 	if strings.ContainsAny(value, " \t\n\r\"'\\$`") && !strings.Contains(value, pathSeparator) {
 		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
