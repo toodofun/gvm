@@ -28,7 +28,7 @@ import (
 const pathSeparator = ";"
 
 func (m *Manager) GetEnv(key string) (string, error) {
-	envKey, err := registry.OpenKey(registry.CURRENT_USER, `Environment`, registry.QUERY_VALUE)
+	envKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `Environment`, registry.QUERY_VALUE)
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +44,7 @@ func (m *Manager) GetEnv(key string) (string, error) {
 
 func (m *Manager) SetEnv(key, value string) error {
 	value = m.quoteValue(value)
-	envKey, err := registry.OpenKey(registry.CURRENT_USER, `Environment`, registry.SET_VALUE)
+	envKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `Environment`, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (m *Manager) SetEnv(key, value string) error {
 }
 
 func (m *Manager) DeleteEnv(key string) error {
-	envKey, err := registry.OpenKey(registry.CURRENT_USER, `Environment`, registry.SET_VALUE)
+	envKey, err := registry.OpenKey(registry.LOCAL_MACHINE, `Environment`, registry.SET_VALUE)
 	if err != nil {
 		return err
 	}
