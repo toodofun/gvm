@@ -80,6 +80,7 @@ func TestAllSuffix(t *testing.T) {
 	noSuffix := "test"
 	require.False(t, false, AllSuffix.Has(noSuffix))
 
+	require.Equal(t, "test", AllSuffix.Trim(packageName))
 	require.Equal(t, "test", AllSuffix.Trim(noSuffix))
 
 	//no suffix defined
