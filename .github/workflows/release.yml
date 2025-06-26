@@ -85,7 +85,7 @@ jobs:
     needs: [releases-linux-binaries]
     env:
       DOCKER_BUILD_ARG_RELEASE: ${{ github.ref_name }}
-      REGISTRY_PREFIX: toodofun
+      REGISTRY_PREFIX: toodo
       IMAGE: gvm
     strategy:
       matrix:
