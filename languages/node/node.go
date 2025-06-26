@@ -117,10 +117,14 @@ func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVers
 }
 
 func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
+	binPath := filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin")
+	if runtime.GOOS == "windows" {
+		binPath = filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node")
+	}
 	envs := []env.KV{
 		{
 			Key:    "PATH",
-			Value:  filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin"),
+			Value:  binPath,
 			Append: true,
 		},
 	}
