@@ -15,8 +15,9 @@
 package view_test
 
 import (
-	"gvm/internal/view"
 	"testing"
+
+	"github.com/toodofun/gvm/internal/view"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"

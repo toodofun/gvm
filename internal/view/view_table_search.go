@@ -16,8 +16,9 @@ package view
 
 import (
 	"fmt"
-	"gvm/internal/log"
 	"strings"
+
+	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gdamore/tcell/v2"

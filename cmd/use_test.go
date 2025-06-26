@@ -18,11 +18,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"gvm/cmd"
 	"strings"
 	"testing"
 
-	"gvm/internal/core"
+	"github.com/toodofun/gvm/cmd"
+
+	"github.com/toodofun/gvm/internal/core"
 )
 
 // 模拟 core.GetLanguage 返回的语言接口

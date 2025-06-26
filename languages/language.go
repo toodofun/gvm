@@ -17,12 +17,13 @@ package languages
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/log"
-	"gvm/internal/util/env"
-	"gvm/internal/util/path"
 	"os"
 	"path/filepath"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
+	"github.com/toodofun/gvm/internal/util/env"
+	"github.com/toodofun/gvm/internal/util/path"
 
 	goversion "github.com/hashicorp/go-version"
 )

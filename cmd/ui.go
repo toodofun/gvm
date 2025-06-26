@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"gvm/internal/view"
+	"github.com/toodofun/gvm/internal/view"
 
 	"github.com/spf13/cobra"
 )

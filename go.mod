@@ -1,4 +1,4 @@
-module gvm
+module github.com/toodofun/gvm
 
 go 1.24.1
 
@@ -16,6 +16,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/sys v0.33.0
 	resty.dev/v3 v3.0.0-beta.3
 )
 
@@ -32,7 +33,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/net v0.41.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -16,7 +16,8 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/internal/core"
+
+	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/spf13/cobra"
 )

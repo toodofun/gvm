@@ -17,7 +17,8 @@ package view
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
+
+	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
 )

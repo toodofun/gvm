@@ -17,12 +17,13 @@ package log_test
 import (
 	"bytes"
 	"context"
-	"gvm/internal/core"
-	customlog "gvm/internal/log"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/toodofun/gvm/internal/core"
+	customlog "github.com/toodofun/gvm/internal/log"
 
 	"github.com/sirupsen/logrus"
 )

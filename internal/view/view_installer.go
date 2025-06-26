@@ -17,9 +17,10 @@ package view
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/log"
 	"time"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"

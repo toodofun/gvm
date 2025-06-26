@@ -21,8 +21,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"gvm/internal/core"
-	"gvm/internal/log"
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

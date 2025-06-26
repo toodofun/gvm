@@ -18,19 +18,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/http"
-	"gvm/internal/log"
-	common "gvm/internal/util/compress"
-	"gvm/internal/util/env"
-	"gvm/internal/util/path"
-	"gvm/internal/util/slice"
 	"path/filepath"
 
-	"gvm/languages"
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/http"
+	"github.com/toodofun/gvm/internal/log"
+	common "github.com/toodofun/gvm/internal/util/compress"
+	"github.com/toodofun/gvm/internal/util/env"
+	"github.com/toodofun/gvm/internal/util/path"
+	"github.com/toodofun/gvm/internal/util/slice"
+
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/toodofun/gvm/languages"
 
 	goversion "github.com/hashicorp/go-version"
 )
