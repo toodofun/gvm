@@ -15,9 +15,9 @@
 package main
 
 import (
-	"gvm/cmd"
-	_ "gvm/languages/golang"
-	_ "gvm/languages/node"
+	"github.com/toodofun/gvm/cmd"
+	_ "github.com/toodofun/gvm/languages/golang"
+	_ "github.com/toodofun/gvm/languages/node"
 
 	"github.com/sirupsen/logrus"
 )

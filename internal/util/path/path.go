@@ -16,9 +16,10 @@ package path
 
 import (
 	"fmt"
-	"gvm/internal/core"
 	"os"
 	"path"
+
+	"github.com/toodofun/gvm/internal/core"
 )
 
 const (

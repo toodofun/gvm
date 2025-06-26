@@ -16,9 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/log"
-	"gvm/internal/util/match"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
+	"github.com/toodofun/gvm/internal/util/match"
 
 	vers "github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"

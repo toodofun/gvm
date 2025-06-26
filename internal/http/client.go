@@ -17,7 +17,6 @@ package http
 import (
 	"context"
 	"fmt"
-	"gvm/internal/log"
 	"io"
 	"net"
 	"net/http"
@@ -27,6 +26,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/patrickmn/go-cache"
 	"github.com/schollz/progressbar/v3"

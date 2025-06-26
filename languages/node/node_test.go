@@ -16,10 +16,11 @@ package node
 
 import (
 	"context"
-	"gvm/internal/core"
 	"os/exec"
 	"strings"
 	"testing"
+
+	"github.com/toodofun/gvm/internal/core"
 
 	goversion "github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/require"

@@ -16,8 +16,9 @@ package languages
 
 import (
 	"context"
-	"gvm/internal/core"
-	"gvm/internal/log"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
 
 	goversion "github.com/hashicorp/go-version"
 )

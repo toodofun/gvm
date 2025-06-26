@@ -16,11 +16,12 @@ package log
 
 import (
 	"context"
-	"gvm/internal/core"
 	"io"
 	"os"
 	"path"
 	"sync"
+
+	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/sirupsen/logrus"
 )

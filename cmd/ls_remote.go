@@ -16,9 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/util/color"
 	"os"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/util/color"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/jedib0t/go-pretty/v6/table"

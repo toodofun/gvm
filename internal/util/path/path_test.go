@@ -20,8 +20,8 @@ import (
 	"runtime"
 	"testing"
 
-	"gvm/internal/core"
-	gvmpath "gvm/internal/util/path"
+	"github.com/toodofun/gvm/internal/core"
+	gvmpath "github.com/toodofun/gvm/internal/util/path"
 )
 
 // mock root dir for testing

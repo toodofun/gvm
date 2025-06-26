@@ -17,9 +17,10 @@ package view
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/log"
-	"gvm/languages/golang"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
+	"github.com/toodofun/gvm/languages/golang"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/google/uuid"

@@ -21,12 +21,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gvm/internal/log"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/toodofun/gvm/internal/log"
 )
 
 func UnTarGz(ctx context.Context, tarGzName string, dest string) error {

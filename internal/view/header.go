@@ -17,12 +17,13 @@ package view
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
-	"gvm/internal/log"
 	"os"
 	"os/user"
 	"runtime"
 	"strings"
+
+	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"

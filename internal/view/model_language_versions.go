@@ -17,10 +17,11 @@ package view
 import (
 	"context"
 	"fmt"
-	"gvm/internal/core"
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gdamore/tcell/v2"
