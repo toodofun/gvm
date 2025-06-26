@@ -84,7 +84,7 @@ func (m *Manager) setGvmEnv(key, value string) error {
 	if err := os.MkdirAll(filepath.Dir(envFilePath), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(envFilePath, []byte(strings.Join(newFileContent, "\n")), 0644)
+	return os.WriteFile(envFilePath, []byte(strings.Join(newFileContent, "\n")+"\n"), 0644)
 }
 
 func (m *Manager) getGvmEvn(key string) (string, error) {
@@ -135,7 +135,7 @@ func (m *Manager) deleteGvmEnv(key string) error {
 	}
 
 	// 写回文件
-	return os.WriteFile(envFilePath, []byte(strings.Join(newFileContent, "\n")), 0644)
+	return os.WriteFile(envFilePath, []byte(strings.Join(newFileContent, "\n")+"\n"), 0644)
 }
 
 func (m *Manager) detectShell() ShellType {
