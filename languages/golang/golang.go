@@ -188,6 +188,10 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 		}
 	}
 
+	if err = os.RemoveAll(file); err != nil {
+		logger.Warnf("Failed to clean %s: %v", file, err)
+	}
+
 	logger.Infof(
 		"Version %s was successfully installed in %s",
 		version.Version.String(),
