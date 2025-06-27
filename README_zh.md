@@ -10,7 +10,6 @@
 [![GitHub License](https://img.shields.io/github/license/toodofun/gvm)](https://github.com/toodofun/gvm)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/toodofun/gvm/total)](https://github.com/MR5356/toodofun/gvm)
-[![GitHub Release Date](https://img.shields.io/github/v/release/toodofun/gvm?include_prereleases)](https://github.com/toodofun/gvm/releases)
 [![Test Coverage](https://codecov.io/gh/toodofun/gvm/branch/master/graph/badge.svg)](https://codecov.io/gh/toodofun/gvm)
 
 <p align="center">
