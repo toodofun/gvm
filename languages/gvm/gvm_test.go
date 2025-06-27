@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package golang
+package gvm
 
 import (
 	"context"
@@ -21,22 +21,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGolang_ListRemoteVersions(t *testing.T) {
-	golang := &Golang{}
-	remoteVersions, err := golang.ListRemoteVersions(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, remoteVersions)
-}
+// github上会触发403 rate limit exceeded
+//func TestGVM_ListRemoteVersions(t *testing.T) {
+//	gvm := &GVM{}
+//	remoteVersions, err := gvm.ListRemoteVersions(context.Background())
+//	assert.NoError(t, err)
+//	assert.NotNil(t, remoteVersions)
+//}
 
-func TestGolang_ListInstalledVersions(t *testing.T) {
-	golang := &Golang{}
-	installedVersions, err := golang.ListInstalledVersions(context.Background())
+func TestGVM_ListInstalledVersions(t *testing.T) {
+	gvm := &GVM{}
+	installedVersions, err := gvm.ListInstalledVersions(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, installedVersions)
 }
 
-func TestGolang_GetDefaultVersion(t *testing.T) {
-	golang := &Golang{}
-	defaultVersion := golang.GetDefaultVersion(context.Background())
+func TestGVM_GetDefaultVersion(t *testing.T) {
+	gvm := &GVM{}
+	defaultVersion := gvm.GetDefaultVersion(context.Background())
 	assert.NotNil(t, defaultVersion)
 }
