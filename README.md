@@ -67,6 +67,8 @@ Use "gvm [command] --help" for more information about a command.
 - [ ] Rust
 
 ## 🌈&nbsp; Screenshots
+### Usage
+![usage](assets/gvm.gif)
 ### Languages Page
 ![languages](assets/languages.png)
 
