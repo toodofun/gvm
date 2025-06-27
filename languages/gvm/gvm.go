@@ -1,10 +1,30 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package gvm
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
 	goversion "github.com/hashicorp/go-version"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -12,10 +32,6 @@ import (
 	"github.com/toodofun/gvm/internal/util/env"
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/languages"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 const (
@@ -98,7 +114,14 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 		tarType = "zip"
 	}
 
-	url := fmt.Sprintf(downloadBaseUrl, remoteVersion.Origin, remoteVersion.Origin, runtime.GOOS, runtime.GOARCH, tarType)
+	url := fmt.Sprintf(
+		downloadBaseUrl,
+		remoteVersion.Origin,
+		remoteVersion.Origin,
+		runtime.GOOS,
+		runtime.GOARCH,
+		tarType,
+	)
 
 	head, code, err := http.Default().Head(ctx, url)
 	if err != nil {
@@ -114,6 +137,10 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 	file, err := http.Default().
 		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()), fmt.Sprintf("gvm-%s-%s-%s.%s", remoteVersion.Origin, runtime.GOOS, runtime.GOARCH, tarType))
 	logger.Infof("")
+	if err != nil {
+		logger.Errorf("Download remote version error: %v", err)
+		return fmt.Errorf("failed to download version %s: %w", remoteVersion.Version.String(), err)
+	}
 
 	if strings.HasSuffix(url, ".tar.gz") {
 		if err := compress.UnTarGz(ctx, file, filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String())); err != nil {
@@ -131,7 +158,11 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 		logger.Warnf("Failed to clean %s: %v", file, err)
 	}
 
-	logger.Infof("Version %s was successfully installed in %s", remoteVersion.Version.String(), filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()))
+	logger.Infof(
+		"Version %s was successfully installed in %s",
+		remoteVersion.Version.String(),
+		filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()),
+	)
 	return nil
 }
 
