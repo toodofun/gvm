@@ -2,8 +2,9 @@ package gvm
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGVM_ListRemoteVersions(t *testing.T) {
