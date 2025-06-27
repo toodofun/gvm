@@ -67,13 +67,7 @@ Use "gvm [command] --help" for more information about a command.
 - [ ] Rust
 
 ## 🌈&nbsp; 截图
-### Usage
 ![usage](assets/gvm.gif)
-### 语言页面
-![languages](assets/languages.png)
-
-### &nbsp; 版本管理页面
-![language-versions](assets/language-versions.png)
 
 ## 🐳&nbsp; Docker Container
 ### Release
