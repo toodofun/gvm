@@ -9,6 +9,7 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/toodo/gvm.svg?maxAge=604800)](https://hub.docker.com/r/toodo/gvm/)
 [![GitHub License](https://img.shields.io/github/license/toodofun/gvm)](https://github.com/toodofun/gvm)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/toodofun/gvm/total)](https://github.com/MR5356/toodofun/gvm)
 [![Test Coverage](https://codecov.io/gh/toodofun/gvm/branch/master/graph/badge.svg)](https://codecov.io/gh/toodofun/gvm)
 
 <p align="center">
