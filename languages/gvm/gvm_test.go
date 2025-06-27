@@ -21,12 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGVM_ListRemoteVersions(t *testing.T) {
-	gvm := &GVM{}
-	remoteVersions, err := gvm.ListRemoteVersions(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, remoteVersions)
-}
+// github上会触发403 rate limit exceeded
+//func TestGVM_ListRemoteVersions(t *testing.T) {
+//	gvm := &GVM{}
+//	remoteVersions, err := gvm.ListRemoteVersions(context.Background())
+//	assert.NoError(t, err)
+//	assert.NotNil(t, remoteVersions)
+//}
 
 func TestGVM_ListInstalledVersions(t *testing.T) {
 	gvm := &GVM{}
