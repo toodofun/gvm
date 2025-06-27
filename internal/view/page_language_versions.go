@@ -65,7 +65,7 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 						p.app.Alert(fmt.Sprintf("%s is already the default version", v.Version.String()), p.table)
 					} else {
 						p.doAsync(fmt.Sprintf("Set %s as default", v.Version.String()), func() (interface{}, error) {
-							if err := p.app.lang.SetDefaultVersion(context.Background(), v.Version.String()); err != nil {
+							if err := p.app.lang.SetDefaultVersion(p.app.ctx, v.Version.String()); err != nil {
 								return nil, err
 							}
 							return nil, nil
@@ -97,7 +97,7 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 			v := vi.(*version)
 			p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
 				p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
-					return nil, p.app.lang.Uninstall(context.Background(), v.Version.String())
+					return nil, p.app.lang.Uninstall(p.app.ctx, v.Version.String())
 				}, func(i interface{}) {
 					p.refresh()
 				}, func(err error) {
@@ -182,7 +182,7 @@ func (p *PageLanguageVersions) loadLanguageVersionsAsync(
 			})
 		}()
 
-		versions, err := p.languageVersions.GetData(lang)
+		versions, err := p.languageVersions.GetData(p.app.ctx, lang)
 
 		p.app.QueueUpdateDraw(func() {
 			if err != nil {
