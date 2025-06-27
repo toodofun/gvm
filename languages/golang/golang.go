@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -103,6 +104,8 @@ func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
+	gopath := filepath.Join(path.GetLangRoot(g.Name()), "gopath")
+	_ = os.MkdirAll(gopath, os.ModePerm)
 	envs := []env.KV{
 		{
 			Key:    "PATH",
@@ -110,8 +113,12 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 			Append: true,
 		},
 		{
-			Key:   "GOPATH",
+			Key:   "GOROOT",
 			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go"),
+		},
+		{
+			Key:   "GOPATH",
+			Value: gopath,
 		},
 	}
 	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
