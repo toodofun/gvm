@@ -46,8 +46,7 @@ func NewLanguageVersions() *LanguageVersions {
 	return &LanguageVersions{}
 }
 
-func (lv *LanguageVersions) GetData(lang core.Language) (*LanguageVersions, error) {
-	ctx := context.Background()
+func (lv *LanguageVersions) GetData(ctx context.Context, lang core.Language) (*LanguageVersions, error) {
 	rvs, err := lang.ListRemoteVersions(ctx)
 	if err != nil {
 		rvs = []*core.RemoteVersion{}
