@@ -154,12 +154,32 @@ func (a *KeyActions) Range(f RandFn) {
 		keyName := func(k int) string {
 			kn := strings.ToLower(tcell.KeyNames[keys[k]])
 			if v, ok := a.Get(keys[k]); ok && len(v.Opts.DisplayName) > 0 {
-				kn = v.Opts.DisplayName
+				kn = strings.ToLower(v.Opts.DisplayName)
 			}
 			return kn
 		}
 
-		return keyName(i) < keyName(j)
+		priority := func(name string) (int, string) {
+			if len(name) == 1 && name[0] >= 'a' && name[0] <= 'z' {
+				return 0, name // 单个字母
+			}
+			if strings.Contains(name, "-") {
+				return 2, name // 组合键
+			}
+			if len(name) > 0 && name[0] >= 'a' && name[0] <= 'z' {
+				return 1, name // 多字母单词
+			}
+			return 3, name // 符号
+		}
+
+		ni, nj := keyName(i), keyName(j)
+		pi, si := priority(ni)
+		pj, sj := priority(nj)
+
+		if pi != pj {
+			return pi < pj
+		}
+		return si < sj
 	})
 
 	// 按顺序遍历

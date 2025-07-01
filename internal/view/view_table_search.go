@@ -133,7 +133,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, true, WithDisplayName(":cmd"))
+	}, false, WithDisplayName(":cmd"))
 	km[KeySlash] = NewKeyAction("Enter filter mode", func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
@@ -170,7 +170,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.AddItem(t.table, 0, 1, false)
 		t.app.SetFocus(input)
 		return evt
-	}, true, WithDisplayName("/term"))
+	}, true, WithDisplayName("/"))
 	km[KeyG] = NewKeyAction("Jump to top", ActionNil, true, WithDefault())
 	km[KeyShiftG] = NewKeyAction("Jump to bottom", ActionNil, true, WithDefault())
 	km[KeyColonQ] = NewKeyAction("Quit", ActionNil, true)
