@@ -120,6 +120,11 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 			Key:   "GOPATH",
 			Value: gopath,
 		},
+		{
+			Key:    "PATH",
+			Value:  filepath.Join(gopath, "bin"),
+			Append: true,
+		},
 	}
 	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
 }
