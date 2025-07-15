@@ -60,6 +60,7 @@ func NewRootCmd() *cobra.Command {
 		NewCurrentCmd(),
 		NewUICmd(),
 		NewCmdVersion(),
+		NewAddAddonCmd(),
 	)
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
 
