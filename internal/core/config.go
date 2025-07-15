@@ -17,6 +17,8 @@ package core
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/toodofun/gvm/internal/util/file"
 )
 
 const (
@@ -27,6 +29,16 @@ const (
 )
 
 var Version = "1.0.0-dev"
+
+type Config struct {
+	Addon []LanguageItem `json:"addon"`
+}
+
+type LanguageItem struct {
+	Name           string `json:"name"`
+	Provider       string `json:"provider"`
+	DataSourceName string `json:"dsn"`
+}
 
 type ctxKey string
 
@@ -41,4 +53,16 @@ var GetRootDir = func() string {
 		panic("无法创建配置目录: " + err.Error())
 	}
 	return rootDir
+}
+
+func GetConfigPath() string {
+	return filepath.Join(GetRootDir(), "config.json")
+}
+
+func GetConfig() *Config {
+	config := new(Config)
+	if err := file.ReadJSONFile(GetConfigPath(), config); err != nil {
+		return config
+	}
+	return config
 }
