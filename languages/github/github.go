@@ -163,15 +163,17 @@ func (g *Github) Install(ctx context.Context, remoteVersion *core.RemoteVersion)
 			logger.Warnf("Failed to untar version %s: %s", remoteVersion.Version.String(), err)
 			return fmt.Errorf("failed to extract version %s: %w", remoteVersion.Version.String(), err)
 		}
+		if err = os.RemoveAll(file); err != nil {
+			logger.Warnf("Failed to clean %s: %v", file, err)
+		}
 	} else if strings.HasSuffix(url, ".zip") {
 		if err := compress.UnZip(ctx, file, filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", remoteVersion.Version.String(), err)
 			return fmt.Errorf("failed to extract version %s: %w", remoteVersion.Version.String(), err)
 		}
-	}
-
-	if err = os.RemoveAll(file); err != nil {
-		logger.Warnf("Failed to clean %s: %v", file, err)
+		if err = os.RemoveAll(file); err != nil {
+			logger.Warnf("Failed to clean %s: %v", file, err)
+		}
 	}
 
 	logger.Infof(
