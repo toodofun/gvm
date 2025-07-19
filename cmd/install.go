@@ -68,6 +68,10 @@ func NewInstallCmd() *cobra.Command {
 			if err := language.Install(ctx, versionMap[matchedVersion.String()]); err != nil {
 				return err
 			}
+			// 自动设置为默认版本
+			if err := language.SetDefaultVersion(ctx, matchedVersion.String()); err != nil {
+				return err
+			}
 
 			return nil
 		},

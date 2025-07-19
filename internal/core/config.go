@@ -22,9 +22,7 @@ import (
 )
 
 const (
-	defaultHomeDir = "/opt"
-	defaultDir     = ".gvm"
-
+	defaultDir                 = ".gvm"
 	ContextLogWriterKey ctxKey = "context.log.writer"
 )
 
@@ -43,11 +41,14 @@ type LanguageItem struct {
 type ctxKey string
 
 var GetRootDir = func() string {
-	home, err := os.UserConfigDir()
-	if err != nil {
-		home = defaultHomeDir
+	home := os.Getenv("HOME")
+	if home == "" {
+		var err error
+		home, err = os.UserConfigDir()
+		if err != nil {
+			home = "/opt"
+		}
 	}
-
 	rootDir := filepath.Join(home, defaultDir)
 	if err := os.MkdirAll(rootDir, 0755); err != nil {
 		panic("无法创建配置目录: " + err.Error())
