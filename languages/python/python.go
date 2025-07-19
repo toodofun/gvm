@@ -17,7 +17,7 @@ package python
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -75,7 +75,7 @@ func (p *Python) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion,
 		return res, err
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Warnf("Failed to read python versions page: %v", err)
 		return res, err
