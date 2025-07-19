@@ -142,3 +142,4 @@ internal/server/static/*
 config-dev.yaml
 
 /tmp
+gvm
