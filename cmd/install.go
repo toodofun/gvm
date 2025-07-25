@@ -26,7 +26,7 @@ import (
 )
 
 func NewInstallCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "install <lang> <version>",
 		Short: "Install a specific version of a language",
 		Args: func(cmd *cobra.Command, args []string) error {
@@ -35,45 +35,53 @@ func NewInstallCmd() *cobra.Command {
 			}
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			lang := args[0]
-			version := args[1]
-			ctx := cmd.Context()
-			logger := log.GetLogger(ctx)
+	}
 
-			language, exists := core.GetLanguage(lang)
-			if !exists {
-				return cmd.Help()
-			}
+	var setDefault bool
+	cmd.Flags().BoolVar(&setDefault, "set-default", false, "Set the installed version as default")
 
-			// 检查是否存在
-			versions, err := language.ListRemoteVersions(ctx)
-			if err != nil {
-				return err
-			}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		lang := args[0]
+		version := args[1]
+		ctx := cmd.Context()
+		logger := log.GetLogger(ctx)
 
-			vs := make([]*vers.Version, len(versions))
-			versionMap := make(map[string]*core.RemoteVersion)
-			for i, v := range versions {
-				vs[i] = v.Version
-				versionMap[v.Version.String()] = v
-			}
+		language, exists := core.GetLanguage(lang)
+		if !exists {
+			return cmd.Help()
+		}
 
-			matchedVersion, err := match.MatchVersion(version, vs)
-			if err != nil {
-				return err
-			}
-			logger.Infof("Matched version %s", versionMap[matchedVersion.String()].Version.String())
+		// 检查远程是否存在
+		versions, err := language.ListRemoteVersions(ctx)
+		if err != nil {
+			return err
+		}
 
-			if err := language.Install(ctx, versionMap[matchedVersion.String()]); err != nil {
-				return err
-			}
-			// 自动设置为默认版本
+		vs := make([]*vers.Version, len(versions))
+		versionMap := make(map[string]*core.RemoteVersion)
+		for i, v := range versions {
+			vs[i] = v.Version
+			versionMap[v.Version.String()] = v
+		}
+
+		matchedVersion, err := match.MatchVersion(version, vs)
+		if err != nil {
+			return err
+		}
+		logger.Infof("Matched version %s", versionMap[matchedVersion.String()].Version.String())
+
+		if err := language.Install(ctx, versionMap[matchedVersion.String()]); err != nil {
+			return err
+		}
+
+		if setDefault {
 			if err := language.SetDefaultVersion(ctx, matchedVersion.String()); err != nil {
 				return err
 			}
+		}
 
-			return nil
-		},
+		return nil
 	}
+
+	return cmd
 }

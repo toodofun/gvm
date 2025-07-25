@@ -17,8 +17,6 @@ package python
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -34,6 +32,7 @@ import (
 	"github.com/toodofun/gvm/languages"
 
 	"os/exec"
+	"runtime"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -69,15 +68,9 @@ func (p *Python) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion,
 	logger := log.GetLogger(ctx)
 	res := make([]*core.RemoteVersion, 0)
 
-	resp, err := http.Get("https://www.python.org/ftp/python/")
+	body, err := gvmhttp.Default().Get(ctx, baseUrl)
 	if err != nil {
 		logger.Warnf("Failed to fetch python versions: %v", err)
-		return res, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		logger.Warnf("Failed to read python versions page: %v", err)
 		return res, err
 	}
 	// 匹配如 <a href="3.8.19/">3.8.19/</a> 这样的目录
@@ -175,13 +168,26 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 	if _, err := os.Stat(filepath.Join(srcDir, "configure")); err != nil {
 		return fmt.Errorf("configure not found in %s, cannot build python", srcDir)
 	}
+	// 检查关键编译工具是否存在
+	buildTools := []string{"gcc", "make"}
+	for _, tool := range buildTools {
+		if _, err := exec.LookPath(tool); err != nil {
+			return fmt.Errorf("%s 未安装，请先安装编译工具链后再试", tool)
+		}
+	}
+
 	cmds := []string{
 		fmt.Sprintf("./configure --prefix=\"%s\"", installRoot),
 		"make -j4",
 		"make install",
 	}
 	for _, shellCmd := range cmds {
-		cmd := exec.Command("sh", "-c", shellCmd)
+		var cmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("cmd", "/C", shellCmd)
+		} else {
+			cmd = exec.Command("sh", "-c", shellCmd)
+		}
 		cmd.Dir = srcDir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
