@@ -216,28 +216,52 @@ func (m *Manager) appendToConfigFile() error {
 		return nil // 如果已经存在，则不需要追加
 	}
 
-	file, err := os.OpenFile(cf, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	// 动态检测Go gvm脚本路径
+	goGvmPaths := []string{
+		filepath.Join(homeDir, ".gvm/scripts/gvm"),
+		"/usr/local/gvm/scripts/gvm",
+		"/opt/gvm/scripts/gvm",
+	}
+
+	var goGvmLine string
+	for _, path := range goGvmPaths {
+		if _, err := os.Stat(path); err == nil {
+			goGvmLine = fmt.Sprintf("[[ -s \"%s\" ]] && source \"%s\"", path, path)
+			break
+		}
+	}
+	// 如果文件不存在，则创建文件
+	file, err := os.OpenFile(cf, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	stat, err := file.Stat()
+	data, err := os.ReadFile(cf)
 	if err != nil {
 		return err
 	}
 
-	if stat.Size() > 0 {
-		_, _ = file.Seek(-1, 2)
-		lastChar := make([]byte, 1)
-		_, _ = file.Read(lastChar)
-		if lastChar[0] != '\n' {
-			if _, err := file.WriteString("\n"); err != nil {
-				return err
-			}
+	lines := strings.Split(string(data), "\n")
+	var newLines []string
+	inserted := false
+
+	for _, l := range lines {
+		newLines = append(newLines, l)
+		if goGvmLine != "" && strings.Contains(l, goGvmLine) && !inserted {
+			newLines = append(newLines, line)
+			inserted = true
 		}
 	}
 
-	_, err = file.WriteString(line + "\n")
+	// 如果没有找到Go gvm脚本，则在文件末尾添加
+	if !inserted {
+		newLines = append(newLines, line)
+	}
+
+	// 写回文件
+	file.Truncate(0)
+	file.Seek(0, 0)
+	_, err = file.WriteString(strings.Join(newLines, "\n") + "\n")
 	return err
 }
