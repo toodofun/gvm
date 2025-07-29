@@ -8,7 +8,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.7.0
-	github.com/jedib0t/go-pretty/v6 v6.6.7
+	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rivo/tview v0.0.0-20250501113434-0c592cd31026
 	github.com/schollz/progressbar/v3 v3.18.0
