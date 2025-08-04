@@ -60,7 +60,7 @@ Use "gvm [command] --help" for more information about a command.
 - [x] Golang
 - [x] Node
 - [ ] Java
-- [ ] Python
+- [x] Python (test)
 - [ ] C#
 - [ ] C++/C
 - [ ] Ruby

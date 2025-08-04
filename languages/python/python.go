@@ -143,7 +143,8 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 		return fmt.Errorf("version %s not found at %s, status code: %d", version.Origin, url, code)
 	}
 	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
-	file, err := gvmhttp.Default().Download(ctx, url, filepath.Join(path.GetLangRoot(lang), version.Version.String()), filename)
+	file, err := gvmhttp.Default().
+		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), version.Version.String()), filename)
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version.Version.String(), err)
 	}
@@ -184,19 +185,23 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 	for _, shellCmd := range cmds {
 		var cmd *exec.Cmd
 		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", "/C", shellCmd)
+			cmd = exec.CommandContext(ctx, "cmd", "/C", shellCmd)
 		} else {
-			cmd = exec.Command("sh", "-c", shellCmd)
+			cmd = exec.CommandContext(ctx, "sh", "-c", shellCmd)
 		}
 		cmd.Dir = srcDir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = log.GetStdout(ctx)
+		cmd.Stderr = log.GetStderr(ctx)
 		logger.Infof("Running: %s", shellCmd)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to run %s: %w", shellCmd, err)
 		}
 	}
-	logger.Infof("Version %s was successfully installed in %s", version.Version.String(), filepath.Join(installRoot, "bin"))
+	logger.Infof(
+		"Version %s was successfully installed in %s",
+		version.Version.String(),
+		filepath.Join(installRoot, "bin"),
+	)
 	return nil
 }
 
