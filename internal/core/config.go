@@ -52,7 +52,7 @@ var GetRootDir = func() string {
 
 	// 2. 其次使用 XDG 配置目录
 	if cfgDir, err := os.UserConfigDir(); err == nil && cfgDir != "" {
-		path := filepath.Join(cfgDir, "gvm")
+		path := filepath.Join(cfgDir, defaultDir)
 		if !strings.Contains(path, " ") {
 			ensureDir(path)
 			return path
@@ -93,4 +93,3 @@ func GetConfig() *Config {
 	}
 	return config
 }
-
