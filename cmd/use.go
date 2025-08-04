@@ -41,7 +41,11 @@ func NewUseCmd() *cobra.Command {
 				return cmd.Help()
 			}
 
-			return language.SetDefaultVersion(cmd.Context(), version)
+			if err := language.SetDefaultVersion(cmd.Context(), version); err != nil {
+				return err
+			}
+			fmt.Println("已设置默认版本，执行 \"source ~/.gvmrc\" 或重新打开终端以生效")
+			return nil
 		},
 	}
 }

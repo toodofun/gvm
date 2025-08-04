@@ -73,6 +73,21 @@ func GetLogPath() string {
 	return logPath
 }
 
+func GetStdout(ctx context.Context) io.Writer {
+	logger := logrus.New()
+	logger.SetLevel(logLevel)
+	logger.SetOutput(createWriter(GetWriter(ctx)))
+	logger.SetFormatter(&PlainFormatter{})
+	return logger.WriterLevel(logrus.InfoLevel)
+}
+
+func GetStderr(ctx context.Context) io.Writer {
+	logger := logrus.New()
+	logger.SetLevel(logLevel)
+	logger.SetOutput(createWriter(GetWriter(ctx)))
+	logger.SetFormatter(&PlainFormatter{})
+	return logger.WriterLevel(logrus.ErrorLevel)
+}
 func GetLogger(ctx context.Context) ILogger {
 	logger := logrus.New()
 	logger.SetLevel(logLevel)
