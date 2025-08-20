@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/toodofun/gvm/cmd"
 	_ "github.com/toodofun/gvm/languages/github"
 	_ "github.com/toodofun/gvm/languages/golang"
@@ -26,7 +28,11 @@ import (
 )
 
 func main() {
-	if err := cmd.NewRootCmd().Execute(); err != nil {
+	root := cmd.NewRootCmd()
+	if len(os.Args) == 1 {
+		os.Args = append(os.Args, "ui")
+	}
+	if err := root.Execute(); err != nil {
 		logrus.Fatalf("%v", err)
 	}
 }
