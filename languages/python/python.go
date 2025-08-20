@@ -108,9 +108,14 @@ func (p *Python) SetDefaultVersion(ctx context.Context, version string) error {
 			Value:  filepath.Join(path.GetLangRoot(p.Name()), path.Current, "bin"),
 			Append: true,
 		},
+		//{
+		//	Key:   "PYTHONHOME",
+		//	Value: filepath.Join(path.GetLangRoot(p.Name()), path.Current),
+		//},
 		{
-			Key:   "PYTHONHOME",
-			Value: filepath.Join(path.GetLangRoot(p.Name()), path.Current),
+			Key:    "LD_LIBRARY_PATH",
+			Value:  filepath.Join(path.GetLangRoot(p.Name()), path.Current, "lib"),
+			Append: true,
 		},
 	}
 	return languages.NewLanguage(p).SetDefaultVersion(ctx, version, envs)
