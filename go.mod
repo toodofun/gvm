@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jedib0t/go-pretty/v6 v6.6.8
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/rivo/tview v0.0.0-20250501113434-0c592cd31026
+	github.com/rivo/tview v0.42.0
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
