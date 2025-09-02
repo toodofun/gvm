@@ -1,10 +1,32 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package java
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+
 	goversion "github.com/hashicorp/go-version"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -12,12 +34,6 @@ import (
 	"github.com/toodofun/gvm/internal/util/env"
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/languages"
-	"net/url"
-	"os"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -62,14 +78,21 @@ func (j *Java) getCurrentSystemInfo() (os, arch, hwBitness string) {
 	return
 }
 
-func (j *Java) fetchRemote(ctx context.Context, page, size int, callback func(version *core.RemoteVersion)) (more bool, err error) {
+func (j *Java) fetchRemote(
+	ctx context.Context,
+	page, size int,
+	callback func(version *core.RemoteVersion),
+) (more bool, err error) {
 	logger := log.GetLogger(ctx)
 	params := url.Values{}
 	params.Set("page", strconv.Itoa(page))
 	params.Set("page_size", strconv.Itoa(size))
 	params.Set("availability_types", "ca")
 	params.Set("release_status", "both")
-	params.Set("include_fields", "java_package_features,release_status,support_term,os,arch,hw_bitness,abi,java_package_type,javafx_bundled,sha256_hash,cpu_gen,size,archive_type,certifications,lib_c_type,crac_supported")
+	params.Set(
+		"include_fields",
+		"java_package_features,release_status,support_term,os,arch,hw_bitness,abi,java_package_type,javafx_bundled,sha256_hash,cpu_gen,size,archive_type,certifications,lib_c_type,crac_supported",
+	)
 	params.Set("azul_com", "true")
 	params.Set("archive_type", "tar.gz")
 	params.Set("lib_c_type", "glibc")
@@ -177,7 +200,8 @@ func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger.Debugf("Install version: %+v", version)
 	logger.Infof("Installing %s(%s)", version.Version.String(), version.Comment)
 
-	file, err := http.Default().Download(ctx, version.Origin, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Version.String(), runtime.GOOS, "amd64"))
+	file, err := http.Default().
+		Download(ctx, version.Origin, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Version.String(), runtime.GOOS, "amd64"))
 	logger.Infof("")
 	if err != nil {
 		return fmt.Errorf("failed to download version: %s(%s): %w", version.Version.String(), version.Comment, err)
@@ -221,7 +245,12 @@ func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 		}
 	}
 
-	logger.Infof("Version %s(%s) was successfully installed in %s", version.Version.String(), version.Comment, installDir)
+	logger.Infof(
+		"Version %s(%s) was successfully installed in %s",
+		version.Version.String(),
+		version.Comment,
+		installDir,
+	)
 
 	return nil
 }
