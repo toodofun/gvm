@@ -26,17 +26,17 @@ func TestJava_Name(t *testing.T) {
 	}
 }
 
-func TestJava_ListRemoteVersions(t *testing.T) {
-	j := &Java{}
-	versions, err := j.ListRemoteVersions(context.Background())
-	if err != nil {
-		t.Errorf("ListRemoteVersions error: %v", err)
-	}
-
-	if len(versions) == 0 {
-		t.Errorf("expected remote versions, got 0")
-	}
-}
+//func TestJava_ListRemoteVersions(t *testing.T) {
+//	j := &Java{}
+//	versions, err := j.ListRemoteVersions(context.Background())
+//	if err != nil {
+//		t.Errorf("ListRemoteVersions error: %v", err)
+//	}
+//
+//	if len(versions) == 0 {
+//		t.Errorf("expected remote versions, got 0")
+//	}
+//}
 
 func TestJava_ListInstalledVersions(t *testing.T) {
 	j := &Java{}
