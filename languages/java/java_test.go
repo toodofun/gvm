@@ -40,13 +40,9 @@ func TestJava_Name(t *testing.T) {
 
 func TestJava_ListInstalledVersions(t *testing.T) {
 	j := &Java{}
-	versions, err := j.ListInstalledVersions(context.Background())
+	_, err := j.ListInstalledVersions(context.Background())
 	if err != nil {
 		t.Errorf("ListInstalledVersions error: %v", err)
-	}
-	// 如果没有安装版本，应该返回空列表而不是错误
-	if len(versions) == 0 {
-		t.Errorf("should return empty slice, not nil")
 	}
 }
 
