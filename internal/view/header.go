@@ -33,7 +33,7 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 	logger := log.GetLogger(ctx)
 	u, err := user.Current()
 	if err != nil {
-		u = &user.User{Name: "unknow"}
+		u = &user.User{Username: "unknow"}
 	}
 
 	hn, err := os.Hostname()
@@ -49,7 +49,7 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		{Key: "[yellow] Hostname[-:-:-]", Value: hn},
 		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
 		{Key: "[yellow] GVM Rev.[-:-:-]", Value: core.Version},
-		{Key: "[yellow] Username[-:-:-]", Value: u.Name},
+		{Key: "[yellow] Username[-:-:-]", Value: u.Username},
 		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
 	}
 	desc := tview.NewTable().

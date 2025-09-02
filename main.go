@@ -21,6 +21,7 @@ import (
 	_ "github.com/toodofun/gvm/languages/github"
 	_ "github.com/toodofun/gvm/languages/golang"
 	_ "github.com/toodofun/gvm/languages/gvm"
+	_ "github.com/toodofun/gvm/languages/java"
 	_ "github.com/toodofun/gvm/languages/node"
 	_ "github.com/toodofun/gvm/languages/python"
 
