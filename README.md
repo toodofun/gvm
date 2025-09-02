@@ -59,8 +59,8 @@ Use "gvm [command] --help" for more information about a command.
 ## 🐍&nbsp; Supported Programming Languages
 - [x] Golang
 - [x] Node
-- [ ] Java
-- [x] Python (test)
+- [x] Java (zulu)
+- [x] Python
 - [ ] C#
 - [ ] C++/C
 - [ ] Ruby
