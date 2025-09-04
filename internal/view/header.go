@@ -52,12 +52,25 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		{Key: "[yellow] Username[-:-:-]", Value: u.Username},
 		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
 	}
+
 	desc := tview.NewTable().
 		SetBorders(false)
 	for i, kv := range descMap {
 		desc.SetCell(i, 0, tview.NewTableCell(kv.Key))
 		desc.SetCell(i, 1, tview.NewTableCell(kv.Value))
 	}
+
+	// 异步检查更新
+	go func() {
+		has, latest := v.CheckUpdate(ctx)
+		if has {
+			a.QueueUpdateDraw(func() {
+				newRow := desc.GetRowCount()
+				desc.SetCell(newRow, 0, tview.NewTableCell("[yellow] New Ver.[-:-:-]"))
+				desc.SetCell(newRow, 1, tview.NewTableCell("[blue]"+latest+"❗️[-:-:-]"))
+			})
+		}
+	}()
 
 	a.help = tview.NewFlex()
 
