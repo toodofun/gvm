@@ -22,8 +22,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/log"
+	v "github.com/toodofun/gvm/internal/util/version"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -48,16 +48,29 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 	descMap := []KV{
 		{Key: "[yellow] Hostname[-:-:-]", Value: hn},
 		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
-		{Key: "[yellow] GVM Rev.[-:-:-]", Value: core.Version},
+		{Key: "[yellow] GVM Rev.[-:-:-]", Value: v.Get().GitVersion},
 		{Key: "[yellow] Username[-:-:-]", Value: u.Username},
 		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
 	}
+
 	desc := tview.NewTable().
 		SetBorders(false)
 	for i, kv := range descMap {
 		desc.SetCell(i, 0, tview.NewTableCell(kv.Key))
 		desc.SetCell(i, 1, tview.NewTableCell(kv.Value))
 	}
+
+	// 异步检查更新
+	go func() {
+		has, latest := v.CheckUpdate(ctx)
+		if has {
+			a.QueueUpdateDraw(func() {
+				newRow := desc.GetRowCount()
+				desc.SetCell(newRow, 0, tview.NewTableCell("[yellow] New Ver.[-:-:-]"))
+				desc.SetCell(newRow, 1, tview.NewTableCell("[blue]"+latest+"❗️[-:-:-]"))
+			})
+		}
+	}()
 
 	a.help = tview.NewFlex()
 
