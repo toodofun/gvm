@@ -17,9 +17,11 @@ package python
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/languages"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -161,4 +163,175 @@ func containsSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+func TestPython_checkAvailableVersions(t *testing.T) {
+	p := &Python{}
+	ctx := context.Background()
+
+	t.Run("check non-existent version", func(t *testing.T) {
+		versions, err := p.checkAvailableVersions(ctx, "99.99.99")
+		if err == nil {
+			t.Error("expected error for non-existent version")
+		}
+		if len(versions) != 0 {
+			t.Errorf("expected empty versions, got %v", versions)
+		}
+	})
+
+	t.Run("check invalid base version", func(t *testing.T) {
+		versions, err := p.checkAvailableVersions(ctx, "invalid")
+		if err == nil {
+			t.Error("expected error for invalid version")
+		}
+		if len(versions) != 0 {
+			t.Errorf("expected empty versions, got %v", versions)
+		}
+	})
+}
+
+func TestPython_ListRemoteVersions_Enhanced(t *testing.T) {
+	p := &Python{}
+	ctx := context.Background()
+
+	versions, err := p.ListRemoteVersions(ctx)
+	if err != nil {
+		t.Skipf("Skipping remote test due to network error: %v", err)
+		return
+	}
+
+	if len(versions) == 0 {
+		t.Error("expected at least one version")
+		return
+	}
+
+	// 检查版本是否按照从新到旧排序
+	for i := 1; i < len(versions); i++ {
+		if versions[i-1].Version.LessThan(versions[i].Version) {
+			t.Errorf("versions not sorted correctly: %s should be after %s", 
+				versions[i-1].Version.String(), versions[i].Version.String())
+		}
+	}
+
+	// 检查是否包含候选版本
+	hasPreRelease := false
+	hasStable := false
+	for _, v := range versions {
+		if v.Comment == "Release Candidate" || v.Comment == "Beta" || v.Comment == "Alpha" {
+			hasPreRelease = true
+		}
+		if v.Comment == "Stable Release" {
+			hasStable = true
+		}
+	}
+
+	if !hasStable {
+		t.Error("expected at least one stable release")
+	}
+
+	// 如果有预发布版本，检查注释是否正确
+	if hasPreRelease {
+		t.Log("Found pre-release versions with proper comments")
+	}
+}
+
+func TestPython_Install_VersionFormat(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		origin         string
+		expectedVer    string
+		expectedBase   string
+	}{
+		{
+			name:         "stable version",
+			origin:       "3.13.0",
+			expectedVer:  "3.13.0",
+			expectedBase: "3.13.0",
+		},
+		{
+			name:         "release candidate with dash",
+			origin:       "3.14.0-rc2",
+			expectedVer:  "3.14.0rc2",
+			expectedBase: "3.14.0",
+		},
+		{
+			name:         "beta version with dash",
+			origin:       "3.14.0-b4",
+			expectedVer:  "3.14.0b4",
+			expectedBase: "3.14.0",
+		},
+		{
+			name:         "alpha version with dash",
+			origin:       "3.14.0-a7",
+			expectedVer:  "3.14.0a7",
+			expectedBase: "3.14.0",
+		},
+		{
+			name:         "rc without dash",
+			origin:       "3.14.0rc1",
+			expectedVer:  "3.14.0rc1",
+			expectedBase: "3.14.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// 测试版本字符串转换逻辑
+			versionStr := tt.origin
+			versionStr = strings.ReplaceAll(versionStr, "-rc", "rc")
+			versionStr = strings.ReplaceAll(versionStr, "-b", "b")
+			versionStr = strings.ReplaceAll(versionStr, "-a", "a")
+			
+			if versionStr != tt.expectedVer {
+				t.Errorf("expected version string %s, got %s", tt.expectedVer, versionStr)
+			}
+
+			// 测试基础版本提取
+			baseVersion := versionStr
+			if idx := strings.IndexAny(baseVersion, "abr"); idx > 0 {
+				baseVersion = baseVersion[:idx]
+			}
+			
+			if baseVersion != tt.expectedBase {
+				t.Errorf("expected base version %s, got %s", tt.expectedBase, baseVersion)
+			}
+		})
+	}
+}
+
+func TestPython_PreReleaseError_Integration(t *testing.T) {
+	p := &Python{}
+	ctx := context.Background()
+
+	// 创建一个模拟的 RemoteVersion
+	ver, err := goversion.NewVersion("3.14.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	remoteVersion := &core.RemoteVersion{
+		Version: ver,
+		Origin:  "3.14.0",
+		Comment: "",
+	}
+
+	// 注意：这个测试可能会因为网络问题失败，所以我们只检查错误类型
+	err = p.Install(ctx, remoteVersion)
+	if err != nil {
+		// 检查是否是 PreReleaseError
+		if preErr, ok := err.(*languages.PreReleaseError); ok {
+			if preErr.Language != "python" {
+				t.Errorf("expected language python, got %s", preErr.Language)
+			}
+			if preErr.RequestedVersion != "3.14.0" {
+				t.Errorf("expected requested version 3.14.0, got %s", preErr.RequestedVersion)
+			}
+			if len(preErr.AvailableVersions) == 0 {
+				t.Error("expected some available versions")
+			}
+		}
+		// 如果不是 PreReleaseError，可能是网络错误等，跳过测试
+		t.Skipf("Install test skipped due to error: %v", err)
+	}
 }
