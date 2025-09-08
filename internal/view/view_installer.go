@@ -16,13 +16,16 @@ package view
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/log"
+	"github.com/toodofun/gvm/languages"
 
 	"github.com/gdamore/tcell/v2"
+	goversion "github.com/hashicorp/go-version"
 	"github.com/rivo/tview"
 )
 
@@ -116,6 +119,7 @@ func (i *Installer) Install() {
 		}()
 
 		err := i.lang.Install(ctx, i.version)
+		var preReleaseErr *languages.PreReleaseError
 		if err != nil {
 			i.write("install failed: " + err.Error())
 		} else {
@@ -127,15 +131,42 @@ func (i *Installer) Install() {
 
 		// 安装完成后设置按钮和事件处理
 		i.app.QueueUpdateDraw(func() {
-			// 先设置事件处理函数
-			i.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-				// 移除页面
-				i.pages.RemovePage(pageInstaller)
-				i.callback(err)
-			})
-
-			// 再添加按钮
-			i.AddButtons([]string{"OK"})
+			// 检查是否是预发布版本错误
+			if errors.As(err, &preReleaseErr) && preReleaseErr.GetRecommendedVersion() != "" {
+				// 提供两个选项：安装推荐版本或取消
+				i.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+					if buttonIndex == 0 { // 安装推荐版本
+						// 创建新的版本对象
+						recommendedVer, verErr := goversion.NewVersion(preReleaseErr.GetRecommendedVersion())
+						if verErr == nil {
+							newVersion := &core.RemoteVersion{
+								Version: recommendedVer,
+								Origin:  preReleaseErr.GetRecommendedVersion(),
+								Comment: "",
+							}
+							// 移除当前页面
+							i.pages.RemovePage(pageInstaller)
+							// 创建新的安装器安装推荐版本
+							newInstaller := NewInstall(i.app, i.pages, i.lang, newVersion, i.callback)
+							newInstaller.Install()
+						} else {
+							i.pages.RemovePage(pageInstaller)
+							i.callback(err)
+						}
+					} else { // 取消
+						i.pages.RemovePage(pageInstaller)
+						i.callback(err)
+					}
+				})
+				i.AddButtons([]string{"安装 " + preReleaseErr.GetRecommendedVersion(), "取消"})
+			} else {
+				// 普通错误，只显示 OK 按钮
+				i.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+					i.pages.RemovePage(pageInstaller)
+					i.callback(err)
+				})
+				i.AddButtons([]string{"OK"})
+			}
 
 			// 确保 Modal 获得焦点
 			i.app.SetFocus(i)
