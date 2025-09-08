@@ -16,6 +16,7 @@ package python
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -208,7 +209,7 @@ func TestPython_ListRemoteVersions_Enhanced(t *testing.T) {
 	// 检查版本是否按照从新到旧排序
 	for i := 1; i < len(versions); i++ {
 		if versions[i-1].Version.LessThan(versions[i].Version) {
-			t.Errorf("versions not sorted correctly: %s should be after %s", 
+			t.Errorf("versions not sorted correctly: %s should be after %s",
 				versions[i-1].Version.String(), versions[i].Version.String())
 		}
 	}
@@ -236,12 +237,11 @@ func TestPython_ListRemoteVersions_Enhanced(t *testing.T) {
 }
 
 func TestPython_Install_VersionFormat(t *testing.T) {
-
 	tests := []struct {
-		name           string
-		origin         string
-		expectedVer    string
-		expectedBase   string
+		name         string
+		origin       string
+		expectedVer  string
+		expectedBase string
 	}{
 		{
 			name:         "stable version",
@@ -282,7 +282,7 @@ func TestPython_Install_VersionFormat(t *testing.T) {
 			versionStr = strings.ReplaceAll(versionStr, "-rc", "rc")
 			versionStr = strings.ReplaceAll(versionStr, "-b", "b")
 			versionStr = strings.ReplaceAll(versionStr, "-a", "a")
-			
+
 			if versionStr != tt.expectedVer {
 				t.Errorf("expected version string %s, got %s", tt.expectedVer, versionStr)
 			}
@@ -292,7 +292,7 @@ func TestPython_Install_VersionFormat(t *testing.T) {
 			if idx := strings.IndexAny(baseVersion, "abr"); idx > 0 {
 				baseVersion = baseVersion[:idx]
 			}
-			
+
 			if baseVersion != tt.expectedBase {
 				t.Errorf("expected base version %s, got %s", tt.expectedBase, baseVersion)
 			}
@@ -320,7 +320,8 @@ func TestPython_PreReleaseError_Integration(t *testing.T) {
 	err = p.Install(ctx, remoteVersion)
 	if err != nil {
 		// 检查是否是 PreReleaseError
-		if preErr, ok := err.(*languages.PreReleaseError); ok {
+		var preErr *languages.PreReleaseError
+		if errors.As(err, &preErr) {
 			if preErr.Language != "python" {
 				t.Errorf("expected language python, got %s", preErr.Language)
 			}
