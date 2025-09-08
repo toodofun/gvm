@@ -64,20 +64,20 @@ func TestNewInstall(t *testing.T) {
 	app := tview.NewApplication()
 	pages := tview.NewPages()
 	mockLang := &MockLanguage{}
-	
+
 	ver, err := goversion.NewVersion("3.14.0")
 	assert.NoError(t, err)
-	
+
 	version := &core.RemoteVersion{
 		Version: ver,
 		Origin:  "3.14.0",
 		Comment: "",
 	}
-	
+
 	callback := func(err error) {}
-	
+
 	installer := NewInstall(&Application{Application: app}, pages, mockLang, version, callback)
-	
+
 	assert.NotNil(t, installer)
 	assert.Equal(t, mockLang, installer.lang)
 	assert.Equal(t, version, installer.version)
@@ -87,10 +87,10 @@ func TestNewInstall(t *testing.T) {
 
 func TestInstaller_ErrorHandling(t *testing.T) {
 	tests := []struct {
-		name          string
-		installError  error
+		name            string
+		installError    error
 		expectedButtons int
-		description   string
+		description     string
 	}{
 		{
 			name: "PreReleaseError with available versions",
@@ -100,7 +100,7 @@ func TestInstaller_ErrorHandling(t *testing.T) {
 				AvailableVersions: []string{"3.14.0rc1", "3.14.0rc2"},
 			},
 			expectedButtons: 2,
-			description:    "Should show install and cancel buttons",
+			description:     "Should show install and cancel buttons",
 		},
 		{
 			name: "PreReleaseError with empty versions",
@@ -110,44 +110,38 @@ func TestInstaller_ErrorHandling(t *testing.T) {
 				AvailableVersions: []string{},
 			},
 			expectedButtons: 1,
-			description:    "Should show only OK button",
+			description:     "Should show only OK button",
 		},
 		{
 			name:            "Regular error",
 			installError:    errors.New("network error"),
 			expectedButtons: 1,
-			description:    "Should show only OK button",
+			description:     "Should show only OK button",
 		},
 		{
 			name:            "No error",
 			installError:    nil,
 			expectedButtons: 1,
-			description:    "Should show only OK button for success",
+			description:     "Should show only OK button for success",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			app := tview.NewApplication()
-			pages := tview.NewPages()
-			mockLang := &MockLanguage{}
-			
 			ver, err := goversion.NewVersion("3.14.0")
 			assert.NoError(t, err)
-			
+
 			version := &core.RemoteVersion{
 				Version: ver,
 				Origin:  "3.14.0",
 				Comment: "",
 			}
-			
-			callback := func(err error) {}
-			
+
 			mockLang := &MockLanguage{installError: tt.installError}
-			
+
 			// 模拟安装过程中的错误处理逻辑
 			installErr := mockLang.Install(context.Background(), version)
-			
+
 			// 检查错误类型
 			var preReleaseErr *languages.PreReleaseError
 			if errors.As(installErr, &preReleaseErr) && preReleaseErr.GetRecommendedVersion() != "" {
@@ -158,47 +152,38 @@ func TestInstaller_ErrorHandling(t *testing.T) {
 				// 应该只有一个按钮：OK
 				assert.Equal(t, 1, tt.expectedButtons, tt.description)
 			}
-			
 		})
 	}
 }
 
 func TestInstaller_PreReleaseErrorHandling(t *testing.T) {
-	app := tview.NewApplication()
-	pages := tview.NewPages()
-	mockLang := &MockLanguage{}
-	
 	ver, err := goversion.NewVersion("3.14.0")
 	assert.NoError(t, err)
-	
+
 	version := &core.RemoteVersion{
 		Version: ver,
 		Origin:  "3.14.0",
 		Comment: "",
 	}
-	
+
 	preReleaseErr := &languages.PreReleaseError{
 		Language:          "python",
 		RequestedVersion:  "3.14.0",
 		AvailableVersions: []string{"3.14.0rc1", "3.14.0rc2"},
 	}
-	
-	callback := func(err error) {}
-	
+
 	mockLang := &MockLanguage{installError: preReleaseErr}
-	
+
 	// 测试错误检测
 	installErr := mockLang.Install(context.Background(), version)
 	assert.Error(t, installErr)
-	
+
 	var detectedPreReleaseErr *languages.PreReleaseError
 	assert.True(t, errors.As(installErr, &detectedPreReleaseErr))
 	assert.Equal(t, "python", detectedPreReleaseErr.Language)
 	assert.Equal(t, "3.14.0", detectedPreReleaseErr.RequestedVersion)
 	assert.Equal(t, []string{"3.14.0rc1", "3.14.0rc2"}, detectedPreReleaseErr.AvailableVersions)
 	assert.Equal(t, "3.14.0rc2", detectedPreReleaseErr.GetRecommendedVersion())
-	
-	mockLang.AssertExpectations(t)
 }
 
 func TestInstaller_ButtonLabels(t *testing.T) {
@@ -207,22 +192,22 @@ func TestInstaller_ButtonLabels(t *testing.T) {
 		RequestedVersion:  "3.14.0",
 		AvailableVersions: []string{"3.14.0rc1", "3.14.0rc2"},
 	}
-	
+
 	recommendedVersion := preReleaseErr.GetRecommendedVersion()
 	assert.Equal(t, "3.14.0rc2", recommendedVersion)
-	
+
 	// 测试按钮标签
 	expectedInstallButton := "安装 " + recommendedVersion
 	expectedCancelButton := "取消"
-	
+
 	assert.Equal(t, "安装 3.14.0rc2", expectedInstallButton)
 	assert.Equal(t, "取消", expectedCancelButton)
 }
 
 func TestInstaller_ErrorTypes(t *testing.T) {
 	tests := []struct {
-		name  string
-		err   error
+		name         string
+		err          error
 		isPreRelease bool
 	}{
 		{
@@ -250,9 +235,9 @@ func TestInstaller_ErrorTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var preReleaseErr *languages.PreReleaseError
 			isPreRelease := errors.As(tt.err, &preReleaseErr)
-			
+
 			assert.Equal(t, tt.isPreRelease, isPreRelease)
-			
+
 			if isPreRelease {
 				assert.NotNil(t, preReleaseErr)
 				assert.NotEmpty(t, preReleaseErr.Language)
