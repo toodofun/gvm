@@ -63,8 +63,8 @@ Use "gvm [command] --help" for more information about a command.
 - [x] Python
 - [ ] C#
 - [ ] C++/C
-- [ ] Ruby
-- [ ] Rust
+- [x] Ruby
+- [x] Rust
 
 ## 🌈&nbsp; 截图
 ![usage](assets/gvm.gif)
