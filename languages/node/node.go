@@ -76,7 +76,7 @@ func (v *Version) ConvertToLTS() string {
 		}
 		return ""
 	case string:
-		return val
+		return fmt.Sprintf("LTS: %s", val)
 	default:
 		return ""
 	}
