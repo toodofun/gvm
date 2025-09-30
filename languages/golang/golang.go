@@ -143,7 +143,9 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	if err, exist := languages.HasInstall(ctx, g, *version.Version); err != nil || exist {
 		return err
 	}
-	logger.Infof("Installing version %s", version.Version.String())
+	logger.Infof("🐹 开始安装 Go %s", version.Version.String())
+	logger.Infof("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
+
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
@@ -180,7 +182,7 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version.Version.String(), err)
 	}
-	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
+	logger.Infof("📁 解压 Go 安装包...")
 	if strings.HasSuffix(url, ".tar.gz") {
 		if err := compress.UnTarGz(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", version.Version.String(), err)
@@ -198,7 +200,7 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	}
 
 	logger.Infof(
-		"Version %s was successfully installed in %s",
+		"✅ Go %s 安装成功! 安装位置: %s",
 		version.Version.String(),
 		filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
 	)

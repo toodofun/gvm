@@ -45,16 +45,16 @@ XARGS := xargs -r
 COMMON_SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 
 ifeq ($(origin ROOT_DIR),undefined)
-ROOT_DIR := $(abspath $(shell cd $(COMMON_SELF_DIR) && pwd -P))
+ROOT_DIR := $(shell cd "$(COMMON_SELF_DIR)" && pwd -P)
 endif
 
 # Create output directory
 ifeq ($(origin OUTPUT_DIR),undefined)
 OUTPUT_DIR := $(ROOT_DIR)/_output
-$(shell mkdir -p $(OUTPUT_DIR))
+$(shell mkdir -p "$(OUTPUT_DIR)")
 endif
 
-GO_LDFLAGS := $(shell $(GO) run $(ROOT_DIR)/scripts/gen-ldflags.go)
+GO_LDFLAGS := $(shell $(GO) run "$(ROOT_DIR)/scripts/gen-ldflags.go")
 GO_BUILD_FLAGS = --ldflags "$(GO_LDFLAGS)"
 
 # ==============================================================================
@@ -69,22 +69,22 @@ include scripts/Makefile.tools.mk
 .PHONY: lint
 lint: tools.verify.golangci-lint
 	@echo "===========> Run golangci to lint source codes"
-	@golangci-lint run -c $(ROOT_DIR)/.golangci.yml $(ROOT_DIR)/...
+	@golangci-lint run -c "$(ROOT_DIR)/.golangci.yml" "$(ROOT_DIR)/..."
 
 ## test: Run unit test.
 .PHONY: test
 test: tools.verify.go-junit-report
 	@echo "===========> Run unit test"
-	@set -o pipefail;$(GO) test -tags=test $(shell go list ./...) -race -cover -coverprofile=$(OUTPUT_DIR)/coverage.out \
+	@set -o pipefail;$(GO) test -tags=test $(shell go list ./...) -race -cover -coverprofile="$(OUTPUT_DIR)/coverage.out" \
 		-timeout=10m -shuffle=on -short \
-	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
-	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out
+	@$(GO) tool cover -html="$(OUTPUT_DIR)/coverage.out" -o "$(OUTPUT_DIR)/coverage.html"
+	@$(GO) tool cover -func="$(OUTPUT_DIR)/coverage.out"
 
 ## cover: Run unit test and get test coverage.
 .PHONY: cover
 cover: test
-	@$(GO) tool cover -func=$(OUTPUT_DIR)/coverage.out | \
-		awk -v target=$(COVERAGE) -f $(ROOT_DIR)/scripts/coverage.awk
+	@$(GO) tool cover -func="$(OUTPUT_DIR)/coverage.out" | \
+		awk -v target=$(COVERAGE) -f "$(ROOT_DIR)/scripts/coverage.awk"
 
 ## format: Gofmt (reformat) package sources (exclude vendor dir if existed).
 .PHONY: format
@@ -99,12 +99,12 @@ format: tools.verify.golines tools.verify.goimports
 .PHONY: verify-copyright
 verify-copyright: tools.verify.licctl
 	@echo "===========> Verifying the boilerplate headers for all files"
-	@licctl --check -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github,.idea
+	@licctl --check -f "$(ROOT_DIR)/scripts/boilerplate.txt" "$(ROOT_DIR)" --skip-dirs=_output,testdata,.github,.idea
 
 ## add-copyright: Ensures source code files have copyright license headers.
 .PHONY: add-copyright
 add-copyright: tools.verify.licctl
-	@licctl -v -f $(ROOT_DIR)/scripts/boilerplate.txt $(ROOT_DIR) --skip-dirs=_output,testdata,.github,.idea
+	@licctl -v -f "$(ROOT_DIR)/scripts/boilerplate.txt" "$(ROOT_DIR)" --skip-dirs=_output,testdata,.github,.idea
 
 ## build: generate releases for unix and windows systems
 .PHONY: build
@@ -127,7 +127,7 @@ image.build.%: build
 	$(eval ARCH := $(word 2,$(subst _, ,$(PLATFORM))))
 	@echo "===========> Building and Pushing $(TAG) for $(OS) $(ARCH) $(ROOT_DIR)/$(DOCKER_FILE)"
 	@${DOCKER} buildx build --push -t $(TAG) --build-arg TARGETARCH=${OS}-${ARCH} --build-arg RELEASE=${DOCKER_BUILD_ARG_RELEASE} \
- 		--platform $(DOCKER_MULTI_ARCH) -f $(ROOT_DIR)/$(DOCKER_FILE)  $(ROOT_DIR)
+ 		--platform $(DOCKER_MULTI_ARCH) -f "$(ROOT_DIR)/$(DOCKER_FILE)" "$(ROOT_DIR)"
 
 ## image.push: Push docker mirror repository
 .PHONY: image.push

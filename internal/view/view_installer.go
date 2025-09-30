@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/toodofun/gvm/internal/core"
@@ -89,8 +90,10 @@ func (i *Installer) show() {
 				newText := i.buf.Read()
 				if newText != i.lastText && newText != "" {
 					i.lastText = newText
+					// 格式化文本，确保显示正确
+					formattedText := i.formatDisplayText(newText)
 					i.app.QueueUpdateDraw(func() {
-						i.SetText(newText)
+						i.SetText(formattedText)
 					})
 				}
 			case <-i.stopChan:
@@ -102,6 +105,35 @@ func (i *Installer) show() {
 
 func (i *Installer) write(msg string) {
 	i.buf.Write([]byte(msg))
+}
+
+// formatDisplayText 格式化显示文本，避免重复和混乱
+func (i *Installer) formatDisplayText(text string) string {
+	if text == "" {
+		return ""
+	}
+
+	// 分割为行
+	lines := strings.Split(text, "\n")
+	uniqueLines := make([]string, 0, len(lines))
+	seen := make(map[string]bool)
+
+	// 去重并保持顺序
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" && !seen[trimmed] {
+			uniqueLines = append(uniqueLines, trimmed)
+			seen[trimmed] = true
+		}
+	}
+
+	// 限制最多显示5行，避免界面过载
+	maxLines := 5
+	if len(uniqueLines) > maxLines {
+		uniqueLines = uniqueLines[len(uniqueLines)-maxLines:]
+	}
+
+	return strings.Join(uniqueLines, "\n")
 }
 
 func (i *Installer) Install() {

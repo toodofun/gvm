@@ -198,7 +198,8 @@ func (j *Java) Uninstall(ctx context.Context, version string) error {
 func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 	logger := log.GetLogger(ctx)
 	logger.Debugf("Install version: %+v", version)
-	logger.Infof("Installing %s(%s)", version.Version.String(), version.Comment)
+	logger.Infof("☕ 开始安装 Java %s (%s)", version.Version.String(), version.Comment)
+	logger.Infof("📦 Java 使用预编译包，安装通常需要 1-3 分钟...")
 
 	file, err := http.Default().
 		Download(ctx, version.Origin, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Version.String(), runtime.GOOS, "amd64"))
@@ -208,6 +209,7 @@ func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 	}
 
 	installDir := filepath.Join(path.GetLangRoot(lang), version.Version.String())
+	logger.Infof("📁 解压 Java 安装包...")
 
 	if err := compress.UnTarGz(ctx, file, installDir); err != nil {
 		return fmt.Errorf("failed to unTarGz: %s(%s): %w", version.Version.String(), version.Comment, err)
@@ -217,6 +219,7 @@ func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 		logger.Warnf("failed to clean %s: %v", file, err)
 	}
 
+	logger.Infof("🔧 整理 Java 安装文件...")
 	dirs, err := filepath.Glob(filepath.Join(installDir, "/*"))
 	if err != nil {
 		logger.Errorf("failed to glob %s: %v", installDir, err)
@@ -246,7 +249,7 @@ func (j *Java) Install(ctx context.Context, version *core.RemoteVersion) error {
 	}
 
 	logger.Infof(
-		"Version %s(%s) was successfully installed in %s",
+		"✅ Java %s (%s) 安装成功! 安装位置: %s",
 		version.Version.String(),
 		version.Comment,
 		installDir,

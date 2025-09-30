@@ -148,10 +148,10 @@ func TestUnTarXz(t *testing.T) {
 
 	// 创建 tar.xz 文件
 	tarXzFile := filepath.Join(tempDir, "test.tar.xz")
-	
+
 	// 检查系统是否有 tar 命令
 	ctx := context.Background()
-	
+
 	// 模拟测试（因为创建真实的 tar.xz 文件需要系统依赖）
 	t.Run("UnTarXz with missing file", func(t *testing.T) {
 		dest := filepath.Join(tempDir, "dest")
@@ -179,10 +179,10 @@ func TestUnTarXz(t *testing.T) {
 	t.Run("UnTarXz directory creation", func(t *testing.T) {
 		// 测试目标目录创建
 		dest := filepath.Join(tempDir, "new_dest")
-		
+
 		// 即使文件不存在，至少应该能创建目录
 		err = UnTarXz(ctx, "nonexistent.tar.xz", dest)
-		
+
 		// 检查目录是否被创建
 		if _, err := os.Stat(dest); os.IsNotExist(err) {
 			t.Error("destination directory was not created")

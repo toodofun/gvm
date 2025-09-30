@@ -24,6 +24,8 @@ import (
 	_ "github.com/toodofun/gvm/languages/java"
 	_ "github.com/toodofun/gvm/languages/node"
 	_ "github.com/toodofun/gvm/languages/python"
+	_ "github.com/toodofun/gvm/languages/ruby"
+	_ "github.com/toodofun/gvm/languages/rust"
 
 	"github.com/sirupsen/logrus"
 )
