@@ -1,0 +1,12 @@
+fullName:
+  other: "Global Version Manager"
+hostname:
+  other: "Hostname"
+system:
+  other: "System"
+revision:
+  other: "GVM Rev."
+username:
+  other: "Username"
+logLevel:
+  other: "LogLevel"

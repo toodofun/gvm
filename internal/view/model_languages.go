@@ -15,6 +15,7 @@
 package view
 
 import (
+	"github.com/toodofun/gvm/i18n"
 	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
@@ -32,7 +33,7 @@ func NewLanguages() *Languages {
 }
 
 func (l *Languages) Title() string {
-	return "Global Version Manager"
+	return i18n.GetTranslate("fullName", nil)
 }
 
 func (l *Languages) RowCount() int {

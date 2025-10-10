@@ -22,6 +22,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/toodofun/gvm/i18n"
 	"github.com/toodofun/gvm/internal/log"
 	v "github.com/toodofun/gvm/internal/util/version"
 
@@ -46,7 +47,7 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		Value string
 	}
 	descMap := []KV{
-		{Key: "[yellow] Hostname[-:-:-]", Value: hn},
+		{Key: "[yellow] " + i18n.GetTranslate("hostname", nil) + "[-:-:-]", Value: hn},
 		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
 		{Key: "[yellow] GVM Rev.[-:-:-]", Value: v.Get().GitVersion},
 		{Key: "[yellow] Username[-:-:-]", Value: u.Username},
