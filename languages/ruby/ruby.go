@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	goversion "github.com/hashicorp/go-version"
+
 	"github.com/toodofun/gvm/internal/core"
 	gvmhttp "github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -184,7 +185,11 @@ func (r *Ruby) getDownloadURL(version string) (string, string, error) {
 	case "windows":
 		// Windows 使用 RubyInstaller2 的预编译包
 		filename := fmt.Sprintf("rubyinstaller-%s-1-x64.exe", version)
-		downloadURL := fmt.Sprintf("https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s/%s", version, filename)
+		downloadURL := fmt.Sprintf(
+			"https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-%s/%s",
+			version,
+			filename,
+		)
 		return downloadURL, filename, nil
 	default:
 		// macOS 和 Linux 使用官方源码包（轻量级，编译快）

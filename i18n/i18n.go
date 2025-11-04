@@ -1,3 +1,17 @@
+// Copyright 2025 The Toodofun Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http:www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package i18n
 
 import (
@@ -8,11 +22,14 @@ import (
 	"sync"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
+
+	"github.com/duke-git/lancet/v2/slice"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/log"
 	"github.com/toodofun/gvm/internal/util/file"
-	"golang.org/x/text/language"
-	"gopkg.in/yaml.v3"
 )
 
 var bundle *i18n.Bundle
@@ -53,15 +70,21 @@ func InitI18n(ctx context.Context) {
 		if len(defaultLanguage) == 0 {
 			defaultLanguage = "en"
 		}
-		localizer = i18n.NewLocalizer(bundle, defaultLanguage)
+		defaultLanguages := []string{defaultLanguage, "en"}
+		slice.Unique(defaultLanguages)
+		localizer = i18n.NewLocalizer(bundle, defaultLanguages...)
 	})
 }
 
 func GetTranslate(id string, templateData map[string]any) string {
-	return localizer.MustLocalize(&i18n.LocalizeConfig{
+	res, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID:    id,
 		TemplateData: templateData,
 	})
+	if err != nil {
+		return id
+	}
+	return res
 }
 
 func SetLanguage(language string) error {

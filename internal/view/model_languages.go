@@ -33,7 +33,7 @@ func NewLanguages() *Languages {
 }
 
 func (l *Languages) Title() string {
-	return i18n.GetTranslate("fullName", nil)
+	return i18n.GetTranslate("page.language.fullName", nil)
 }
 
 func (l *Languages) RowCount() int {

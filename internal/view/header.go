@@ -47,11 +47,14 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		Value string
 	}
 	descMap := []KV{
-		{Key: "[yellow] " + i18n.GetTranslate("hostname", nil) + "[-:-:-]", Value: hn},
-		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
-		{Key: "[yellow] GVM Rev.[-:-:-]", Value: v.Get().GitVersion},
-		{Key: "[yellow] Username[-:-:-]", Value: u.Username},
-		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
+		{Key: "[yellow] " + i18n.GetTranslate("header.hostname", nil) + "[-:-:-]", Value: hn},
+		{
+			Key:   "[yellow] " + i18n.GetTranslate("header.system", nil) + "[-:-:-]",
+			Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		},
+		{Key: "[yellow] " + i18n.GetTranslate("header.revision", nil) + "[-:-:-]", Value: v.Get().GitVersion},
+		{Key: "[yellow] " + i18n.GetTranslate("header.username", nil) + "[-:-:-]", Value: u.Username},
+		{Key: "[yellow] " + i18n.GetTranslate("header.logLevel", nil) + "[-:-:-]", Value: log.GetLevel()},
 	}
 
 	desc := tview.NewTable().
@@ -67,8 +70,12 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		if has {
 			a.QueueUpdateDraw(func() {
 				newRow := desc.GetRowCount()
-				desc.SetCell(newRow, 0, tview.NewTableCell("[yellow] New Ver.[-:-:-]"))
-				desc.SetCell(newRow, 1, tview.NewTableCell("[blue]"+latest+"❗️[-:-:-]"))
+				desc.SetCell(
+					newRow,
+					0,
+					tview.NewTableCell("[blue::b] "+i18n.GetTranslate("header.newVersion", nil)+"[-:-:-]"),
+				)
+				desc.SetCell(newRow, 1, tview.NewTableCell("[blue::b]"+latest+"❗️[-:-:-]"))
 			})
 		}
 	}()
