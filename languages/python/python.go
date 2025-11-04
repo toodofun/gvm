@@ -63,6 +63,45 @@ func (p *Python) Name() string {
 	return lang
 }
 
+// isGUIContext 检查是否在GUI环境中
+func (p *Python) isGUIContext(ctx context.Context) bool {
+	// 检查是否有NotifyBuffer，这表明是GUI环境
+	if ctx.Value(core.ContextLogWriterKey) != nil {
+		return true
+	}
+	return false
+}
+
+// getCleanEnvironment 获取清理后的环境变量，避免Python编译冲突
+func (p *Python) getCleanEnvironment() []string {
+	env := os.Environ()
+	cleanEnv := make([]string, 0, len(env))
+
+	for _, e := range env {
+		// 过滤掉可能导致冲突的 Python 环境变量
+		if strings.HasPrefix(e, "PYTHONHOME=") ||
+			strings.HasPrefix(e, "PYTHONPATH=") ||
+			strings.HasPrefix(e, "PYTHON_CONFIGURE_OPTS=") ||
+			strings.HasPrefix(e, "PYTHONSTARTUP=") ||
+			strings.HasPrefix(e, "PYTHONOPTIMIZE=") {
+			continue
+		}
+		cleanEnv = append(cleanEnv, e)
+	}
+
+	// 添加编译时需要的环境变量，使用UTF-8编码
+	cleanEnv = append(cleanEnv, "LC_ALL=en_US.UTF-8")
+	cleanEnv = append(cleanEnv, "LANG=en_US.UTF-8")
+	cleanEnv = append(cleanEnv, "LC_CTYPE=en_US.UTF-8")
+
+	// 在 macOS 上添加额外的环境变量
+	if runtime.GOOS == "darwin" {
+		cleanEnv = append(cleanEnv, "MACOSX_DEPLOYMENT_TARGET=10.9")
+	}
+
+	return cleanEnv
+}
+
 // 获取远程Python版本列表
 func (p *Python) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	logger := log.GetLogger(ctx)
@@ -330,10 +369,14 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 		logger.Warnf("Failed to clean %s: %v", file, err)
 	}
 	// 自动编译源码并安装到gvm管理目录
-	logger.Infof("Building python source in %s", srcDir)
+	logger.Infof("🔨 准备编译 Python %s 源码...", version.Version.String())
+	logger.Infof("📍 编译目录: %s", srcDir)
+	logger.Infof("⚠️  注意: Python 源码编译可能需要 10-30 分钟，请耐心等待...")
+
 	if _, err := os.Stat(filepath.Join(srcDir, "configure")); err != nil {
 		return fmt.Errorf("configure not found in %s, cannot build python", srcDir)
 	}
+
 	// 检查关键编译工具是否存在
 	buildTools := []string{"gcc", "make"}
 	for _, tool := range buildTools {
@@ -342,25 +385,86 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 		}
 	}
 
-	cmds := []string{
-		fmt.Sprintf("./configure --prefix=\"%s\"", installRoot),
-		"make -j4",
-		"make install",
+	// 构建 configure 命令，使用简单可靠的配置
+	configureCmd := fmt.Sprintf("./configure --prefix=\"%s\"", installRoot)
+	if runtime.GOOS == "darwin" {
+		// macOS 特定配置，避免编码和依赖问题
+		configureCmd += " --without-ensurepip --disable-ipv6"
+		// 检查并添加 OpenSSL 路径
+		if _, err := os.Stat("/opt/homebrew/opt/openssl@3"); err == nil {
+			configureCmd += " --with-openssl=/opt/homebrew/opt/openssl@3"
+		} else if _, err := os.Stat("/usr/local/opt/openssl@3"); err == nil {
+			configureCmd += " --with-openssl=/usr/local/opt/openssl@3"
+		}
 	}
-	for _, shellCmd := range cmds {
+
+	cmds := []struct {
+		cmd         string
+		description string
+		duration    string
+	}{
+		{
+			cmd:         configureCmd,
+			description: "配置编译环境",
+			duration:    "1-3 分钟",
+		},
+		{
+			cmd:         "make -j4",
+			description: "编译 Python 源码",
+			duration:    "10-25 分钟",
+		},
+		{
+			cmd:         "make install",
+			description: "安装编译结果",
+			duration:    "1-2 分钟",
+		},
+	}
+
+	for i, cmdInfo := range cmds {
+		logger.Infof("📝 步骤 %d/3: %s (预计耗时: %s)", i+1, cmdInfo.description, cmdInfo.duration)
+		logger.Infof("🚀 执行: %s", cmdInfo.cmd)
+
 		var cmd *exec.Cmd
 		if runtime.GOOS == "windows" {
-			cmd = exec.CommandContext(ctx, "cmd", "/C", shellCmd)
+			cmd = exec.CommandContext(ctx, "cmd", "/C", cmdInfo.cmd)
 		} else {
-			cmd = exec.CommandContext(ctx, "sh", "-c", shellCmd)
+			cmd = exec.CommandContext(ctx, "sh", "-c", cmdInfo.cmd)
 		}
 		cmd.Dir = srcDir
-		cmd.Stdout = log.GetStdout(ctx)
-		cmd.Stderr = log.GetStderr(ctx)
-		logger.Infof("Running: %s", shellCmd)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("failed to run %s: %w", shellCmd, err)
+
+		// 清理可能冲突的 Python 环境变量
+		cmd.Env = p.getCleanEnvironment()
+
+		// 在GUI环境下使用过滤输出，命令行环境下显示完整输出
+		if p.isGUIContext(ctx) {
+			cmd.Stdout = log.GetFilteredStdout(ctx)
+			cmd.Stderr = log.GetFilteredStderr(ctx)
+		} else {
+			cmd.Stdout = log.GetStdout(ctx)
+			cmd.Stderr = log.GetStderr(ctx)
 		}
+
+		if err := cmd.Run(); err != nil {
+			// 提供更友好的错误信息
+			if strings.Contains(cmdInfo.cmd, "configure") {
+				return fmt.Errorf("❌ Python 配置失败。请确保已安装必要的依赖:\n"+
+					"macOS: xcode-select --install && brew install openssl readline sqlite3 xz zlib\n"+
+					"错误详情: %w", err)
+			} else if strings.Contains(cmdInfo.cmd, "make install") {
+				return fmt.Errorf("❌ Python 安装失败。可能是权限或编码问题。\n"+
+					"建议: 1) 检查安装目录权限 2) 重新运行安装 3) 使用系统包管理器: brew install python\n"+
+					"错误详情: %w", err)
+			} else if strings.Contains(cmdInfo.cmd, "make") {
+				return fmt.Errorf("❌ Python 编译失败。这可能是由于:\n"+
+					"1. 缺少系统依赖库\n"+
+					"2. 编译器版本不兼容\n"+
+					"3. 内存不足\n"+
+					"建议使用系统包管理器: brew install python@%s\n"+
+					"错误详情: %w", strings.Split(version.Version.String(), ".")[0]+"."+strings.Split(version.Version.String(), ".")[1], err)
+			}
+			return fmt.Errorf("failed to run %s: %w", cmdInfo.cmd, err)
+		}
+		logger.Infof("✅ 步骤 %d/3 完成: %s", i+1, cmdInfo.description)
 	}
 	logger.Infof(
 		"Version %s was successfully installed in %s",
