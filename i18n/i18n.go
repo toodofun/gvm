@@ -35,6 +35,7 @@ import (
 var bundle *i18n.Bundle
 var localizer *i18n.Localizer
 var once sync.Once
+var defaultLocalizer *i18n.Localizer
 
 func InitI18n(ctx context.Context) {
 	logger := log.GetLogger(ctx)
@@ -73,6 +74,7 @@ func InitI18n(ctx context.Context) {
 		defaultLanguages := []string{defaultLanguage, "en"}
 		slice.Unique(defaultLanguages)
 		localizer = i18n.NewLocalizer(bundle, defaultLanguages...)
+		defaultLocalizer = i18n.NewLocalizer(bundle, "en")
 	})
 }
 
@@ -82,7 +84,12 @@ func GetTranslate(id string, templateData map[string]any) string {
 		TemplateData: templateData,
 	})
 	if err != nil {
-		return id
+		if res, err = defaultLocalizer.Localize(&i18n.LocalizeConfig{
+			MessageID:    id,
+			TemplateData: templateData,
+		}); err != nil {
+			return id
+		}
 	}
 	return res
 }

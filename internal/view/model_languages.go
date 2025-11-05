@@ -43,7 +43,7 @@ func (l *Languages) RowCount() int {
 func (l *Languages) Headers() []*TableHeader {
 	return []*TableHeader{
 		{
-			Title:     "Language",
+			Title:     i18n.GetTranslate("page.language.table.header.language", nil),
 			Expansion: 1,
 		},
 	}

@@ -16,10 +16,11 @@ package view
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"unicode"
+
+	"github.com/toodofun/gvm/i18n"
 
 	"github.com/toodofun/gvm/internal/core"
 
@@ -114,10 +115,13 @@ func Capitalize(s string) string {
 	return string(runes)
 }
 func (lv *LanguageVersions) Title() string {
-	if lv.lang == nil {
-		return "Versions"
+	lang := ""
+	if lv.lang != nil {
+		lang = Capitalize(lv.lang.Name())
 	}
-	return fmt.Sprintf("%s Versions", Capitalize(lv.lang.Name()))
+	return i18n.GetTranslate("page.languageVersion.fullName", map[string]any{
+		"lang": lang,
+	})
 }
 
 func (lv *LanguageVersions) RowCount() int {
@@ -127,19 +131,19 @@ func (lv *LanguageVersions) RowCount() int {
 func (lv *LanguageVersions) Headers() []*TableHeader {
 	return []*TableHeader{
 		{
-			Title:      "Version",
+			Title:      i18n.GetTranslate("page.languageVersion.table.header.version", nil),
 			FixedWidth: 20,
 		},
 		{
-			Title:     "Comment",
+			Title:     i18n.GetTranslate("page.languageVersion.table.header.comment", nil),
 			Expansion: 1,
 		},
 		{
-			Title:     "Location",
+			Title:     i18n.GetTranslate("page.languageVersion.table.header.location", nil),
 			Expansion: 1,
 		},
 		{
-			Title: "Installed",
+			Title: i18n.GetTranslate("page.languageVersion.table.header.installed", nil),
 			Hide:  true,
 		},
 	}
