@@ -149,7 +149,7 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 		"lang":    lang,
 		"version": version.Version.String(),
 	}))
-	logger.Debugf("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
+	//logger.Debugf("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
 
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
