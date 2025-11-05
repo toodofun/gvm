@@ -27,6 +27,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/patrickmn/go-cache"
@@ -244,7 +246,7 @@ func (c *Client) Download(ctx context.Context, url, destPath, filename string) (
 
 	bar := progressbar.NewOptions64(
 		totalSize,
-		progressbar.OptionSetDescription("Downloading"),
+		progressbar.OptionSetDescription("🔗 "+i18n.GetTranslate("languages.download", nil)),
 		progressbar.OptionSetWriter(loggerWriter),
 		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetWidth(30),

@@ -89,3 +89,15 @@ page:
         other: "Go back"
       ctrlD:
         other: "Uninstall selected"
+  installer:
+    install:
+      other: "Install"
+languages:
+  startInstall:
+    other: "Start installing {{ .lang }} {{ .version }}"
+  download:
+    other: "Downloading"
+  extracting:
+    other: "Extracting package..."
+  installComplete:
+    other: "{{ .lang }} {{ .version }} installation complete! location: {{ .location }}"

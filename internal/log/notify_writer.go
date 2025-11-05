@@ -83,7 +83,7 @@ func (b *NotifyBuffer) Write(p []byte) (int, error) {
 // addLine 添加一行到缓冲区
 func (b *NotifyBuffer) addLine(line string) {
 	// 检查是否是重要的友好消息（包含emoji）
-	if strings.ContainsAny(line, "🔨🔗⚙️📝📦🔧❌⚠️✅🐹🟢☕💎🦀") {
+	if strings.ContainsAny(line, "🔨🔗⚙️📝📦📁🔧❌⚠️✅🐹🟢☕💎🦀") {
 		// 检查是否是重复的消息类型
 		messageType := b.getMessageType(line)
 
@@ -123,6 +123,9 @@ func (b *NotifyBuffer) getMessageType(msg string) string {
 	}
 	if strings.Contains(msg, "📦") {
 		return "installing"
+	}
+	if strings.Contains(msg, "📁") {
+		return "extracting"
 	}
 	if strings.Contains(msg, "🔧") {
 		return "checking"

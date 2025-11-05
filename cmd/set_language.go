@@ -25,7 +25,7 @@ import (
 func NewSetLanguageCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "set-language <language name>",
-		Short: "Set defaule application language",
+		Short: "Set default application language, supported languages: en, zh",
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				return errors.New("this command needs exactly one argument: <language name>, eg: en")

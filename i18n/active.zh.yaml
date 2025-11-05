@@ -92,3 +92,15 @@ page:
         other: "返回上一级"
       ctrlD:
         other: "卸载选中版本"
+  installer:
+    install:
+      other: "安装"
+languages:
+  startInstall:
+    other: "开始安装 {{ .lang }} {{ .version }}"
+  download:
+    other: "正在下载"
+  extracting:
+    other: "解压安装包..."
+  installComplete:
+    other: "{{ .lang }} {{ .version }} 安装完成! 位置: {{ .location }}"

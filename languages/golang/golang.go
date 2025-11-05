@@ -23,6 +23,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -143,8 +145,11 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	if err, exist := languages.HasInstall(ctx, g, *version.Version); err != nil || exist {
 		return err
 	}
-	logger.Infof("🐹 开始安装 Go %s", version.Version.String())
-	logger.Infof("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
+	logger.Infof("🐹 %s", i18n.GetTranslate("languages.startInstall", map[string]any{
+		"lang":    lang,
+		"version": version.Version.String(),
+	}))
+	logger.Debugf("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
 
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
@@ -175,14 +180,14 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 		return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
 	}
 
-	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
+	logger.Debugf("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
 		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	logger.Infof("")
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version.Version.String(), err)
 	}
-	logger.Infof("📁 解压 Go 安装包...")
+	logger.Infof("📁 %s", i18n.GetTranslate("languages.extracting", nil))
 	if strings.HasSuffix(url, ".tar.gz") {
 		if err := compress.UnTarGz(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", version.Version.String(), err)
@@ -200,9 +205,12 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	}
 
 	logger.Infof(
-		"✅ Go %s 安装成功! 安装位置: %s",
-		version.Version.String(),
-		filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  version.Version.String(),
+			"location": filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
+		}),
 	)
 	return nil
 }
