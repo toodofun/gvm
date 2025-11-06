@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/log"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -101,7 +103,7 @@ func (t *SearchTable) GetRowCount() int {
 }
 
 func (t *SearchTable) BindKeys(km KeyMap) {
-	km[KeyColon] = NewKeyAction("Enter command mode", func(evt *tcell.EventKey) *tcell.EventKey {
+	km[KeyColon] = NewKeyAction(i18n.GetTranslate("keyAction.colon", nil), func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
 			SetBorderColor(tcell.ColorGreen).
@@ -134,7 +136,7 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.app.SetFocus(input)
 		return evt
 	}, false, WithDisplayName(":cmd"))
-	km[KeySlash] = NewKeyAction("Enter filter mode", func(evt *tcell.EventKey) *tcell.EventKey {
+	km[KeySlash] = NewKeyAction(i18n.GetTranslate("keyAction.slash", nil), func(evt *tcell.EventKey) *tcell.EventKey {
 		input := tview.NewInputField()
 		input.SetBorder(true).
 			SetBorderColor(tcell.ColorGreen).
@@ -171,9 +173,15 @@ func (t *SearchTable) BindKeys(km KeyMap) {
 		t.app.SetFocus(input)
 		return evt
 	}, true, WithDisplayName("/"))
-	km[KeyG] = NewKeyAction("Jump to top", ActionNil, true, WithDefault())
-	km[KeyShiftG] = NewKeyAction("Jump to bottom", ActionNil, true, WithDefault())
-	km[KeyColonQ] = NewKeyAction("Quit", ActionNil, true)
+	km[KeyG] = NewKeyAction(i18n.GetTranslate("keyAction.g", nil), ActionNil, true, WithDefault())
+	km[KeyShiftG] = NewKeyAction(
+		i18n.GetTranslate("keyAction.G", nil),
+		ActionNil,
+		true,
+		WithDefault(),
+		WithDisplayName("G"),
+	)
+	km[KeyColonQ] = NewKeyAction(i18n.GetTranslate("keyAction.colonQ", nil), ActionNil, true)
 	t.actions.Merge(NewKeyActionsFromMap(km))
 	t.app.SetFocus(t.table)
 }
@@ -215,6 +223,18 @@ func (t *SearchTable) command(cmd string) {
 		t.app.Stop()
 	case "log":
 		t.app.Info(fmt.Sprintf("LogPath: %s", log.GetLogPath()), t.table)
+	case "set language en":
+		if err := i18n.SetLanguage("en"); err != nil {
+			t.app.Alert(err.Error(), t.table)
+		} else {
+			t.app.Info("Successfully set language to English. Please restart the application to take effect.", t.table)
+		}
+	case "set language zh":
+		if err := i18n.SetLanguage("zh"); err != nil {
+			t.app.Alert(err.Error(), t.table)
+		} else {
+			t.app.Info("成功切换到中文，请重启程序以应用更改", t.table)
+		}
 	default:
 		t.app.Alert(fmt.Sprintf("command `%s` not found", cmd), t.table)
 	}

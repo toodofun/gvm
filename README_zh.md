@@ -29,15 +29,18 @@ Usage:
   gvm [command]
 
 Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  current     Show Current version of a language
-  help        Help about any command
-  install     Install a specific version of a language
-  ls          List installed versions of language
-  ls-remote   List remote versions of language
-  ui          Run in the terminal UI
-  uninstall   Uninstall a specific version of a language
-  use         Set default versions of language
+  add          Add a new addon to the GVM
+  completion   Generate the autocompletion script for the specified shell
+  current      Show Current version of a language
+  help         Help about any command
+  install      Install a specific version of a language
+  ls           List installed versions of language
+  ls-remote    List remote versions of language
+  set-language Set default application language, supported languages: en, zh
+  ui           Run in the terminal UI
+  uninstall    Uninstall a specific version of a language
+  use          Set default versions of language
+  version      Print version information
 
 Flags:
   -d, --debug   debug mode

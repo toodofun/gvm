@@ -21,6 +21,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/log"
 	"github.com/toodofun/gvm/languages"
@@ -62,7 +64,9 @@ func NewInstall(
 	}
 
 	installer.SetBorder(true)
-	installer.SetTitle(fmt.Sprintf("[blue] Install %s [-:-:-]", version.Version.String()))
+	installer.SetTitle(
+		fmt.Sprintf("[blue] "+i18n.GetTranslate("page.installer.install", nil)+" %s [-:-:-]", version.Version.String()),
+	)
 	installer.Box.SetBackgroundColor(tcell.ColorBlack)
 	installer.SetBackgroundColor(tcell.ColorBlack)
 	installer.SetBorderColor(tcell.ColorBlue)

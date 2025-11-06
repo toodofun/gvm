@@ -19,6 +19,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/languages"
 
@@ -61,6 +63,7 @@ func (m *MockLanguage) Install(ctx context.Context, version *core.RemoteVersion)
 }
 
 func TestNewInstall(t *testing.T) {
+	i18n.InitI18n(context.Background())
 	app := tview.NewApplication()
 	pages := tview.NewPages()
 	mockLang := &MockLanguage{}

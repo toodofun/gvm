@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/toodofun/gvm/i18n"
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/log"
 
@@ -46,6 +47,7 @@ func NewRootCmd() *cobra.Command {
 			if debug {
 				log.SetLevel(logrus.DebugLevel)
 			}
+			i18n.InitI18n(ctx)
 		},
 	}
 
@@ -61,6 +63,7 @@ func NewRootCmd() *cobra.Command {
 		NewUICmd(),
 		NewCmdVersion(),
 		NewAddAddonCmd(),
+		NewSetLanguageCmd(),
 	)
 	cmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug mode")
 

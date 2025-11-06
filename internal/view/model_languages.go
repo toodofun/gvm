@@ -15,6 +15,7 @@
 package view
 
 import (
+	"github.com/toodofun/gvm/i18n"
 	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
@@ -32,7 +33,7 @@ func NewLanguages() *Languages {
 }
 
 func (l *Languages) Title() string {
-	return "Global Version Manager"
+	return i18n.GetTranslate("page.language.fullName", nil)
 }
 
 func (l *Languages) RowCount() int {
@@ -42,7 +43,7 @@ func (l *Languages) RowCount() int {
 func (l *Languages) Headers() []*TableHeader {
 	return []*TableHeader{
 		{
-			Title:     "Language",
+			Title:     i18n.GetTranslate("page.language.table.header.language", nil),
 			Expansion: 1,
 		},
 	}

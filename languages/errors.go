@@ -28,8 +28,13 @@ type PreReleaseError struct {
 
 func (e *PreReleaseError) Error() string {
 	if len(e.AvailableVersions) > 0 {
-		return fmt.Sprintf("版本 %s 尚未正式发布。可用的候选版本：%s\n请使用完整版本号安装，例如：gvm install %s %s",
-			e.RequestedVersion, strings.Join(e.AvailableVersions, ", "), e.Language, e.AvailableVersions[len(e.AvailableVersions)-1])
+		return fmt.Sprintf(
+			"版本 %s 尚未正式发布。可用的候选版本：%s\n请使用完整版本号安装，例如：gvm install %s %s",
+			e.RequestedVersion,
+			strings.Join(e.AvailableVersions, ", "),
+			e.Language,
+			e.AvailableVersions[len(e.AvailableVersions)-1],
+		)
 	}
 	return fmt.Sprintf("版本 %s 尚未正式发布", e.RequestedVersion)
 }

@@ -30,7 +30,8 @@ const (
 var Version = "1.0.0-dev"
 
 type Config struct {
-	Addon []LanguageItem `json:"addon"`
+	Language string         `json:"language"`
+	Addon    []LanguageItem `json:"addon"`
 }
 
 type LanguageItem struct {

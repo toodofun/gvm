@@ -1,0 +1,120 @@
+# Copyright 2025 The Toodofun Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http:www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+global:
+  loading:
+    title:
+      other: "加载中"
+    loadingInfo:
+      other: "加载 {{ .lang }} 版本信息"
+  confirm:
+    title:
+      other: "再次确认"
+    confirm:
+      other: "确认"
+    cancel:
+      other: "取消"
+  alert:
+    title:
+      other: "错误警告"
+    dismiss:
+      other: "关闭"
+  info:
+    title:
+      other: "通知信息"
+    dismiss:
+      other: "关闭"
+header:
+  hostname:
+    other: "主机名称"
+  system:
+    other: "系统信息"
+  revision:
+    other: "软件版本"
+  username:
+    other: "用户名称"
+  logLevel:
+    other: "日志等级"
+  newVersion:
+    other: "有新版本"
+keyAction:
+  colon:
+    other: "进入命令模式"
+  slash:
+    other: "进入过滤模式"
+  g:
+    other: "跳转第一条"
+  G:
+    other: "跳转最后一条"
+  colonQ:
+    other: "退出程序"
+page:
+  language:
+    fullName:
+      other: "全局版本管理器"
+    table:
+      header:
+        language:
+          other: "语言/应用程序"
+    keyAction:
+      enter:
+        other: "进入"
+  languageVersion:
+    fullName:
+      other: "{{ .lang }} 版本"
+    table:
+      header:
+        version:
+          other: "版本号"
+        comment:
+          other: "备注"
+        location:
+          other: "安装位置"
+        installed:
+          other: "已经安装"
+    keyAction:
+      i:
+        other: "仅显示已安装"
+      enter:
+        other: "安装/设置为默认"
+      esc:
+        other: "返回上一级"
+      ctrlD:
+        other: "卸载选中版本"
+  installer:
+    install:
+      other: "安装"
+languages:
+  startInstall:
+    other: "开始安装 {{ .lang }} {{ .version }}"
+  download:
+    other: "正在下载"
+  extracting:
+    other: "解压安装包..."
+  installComplete:
+    other: "{{ .lang }} {{ .version }} 安装完成! 位置: {{ .location }}"
+  setDefaultInfo:
+    other: "确定要将 {{ .version }} 设置为默认版本吗？"
+  alreadyDefault:
+    other: "{{ .version }} 已经是默认版本了"
+  setDefault:
+    other: "设备 {{ .version }} 为默认版本"
+  setDefaultError:
+    other: "设置 {{ .version }} 为默认版本出错了: {{ .error }}"
+  uninstallInfo:
+    other: "确定要卸载 {{ .version }} 版本吗？"
+  uninstall:
+    other: "卸载 {{ .version }}"
+  uninstallError:
+    other: "卸载 {{ .version }} 版本出错了: {{ .error }}"

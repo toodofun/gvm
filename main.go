@@ -30,7 +30,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+//func initI18n() {
+//	bundle := i18n.NewBundle(language.English)
+//	bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
+//
+//	_, err := bundle.LoadMessageFile("i18n/active.zh.yaml")
+//	if err != nil {
+//		logrus.Fatalf("can not load i18n translate file: %v", err)
+//	}
+//}
+
 func main() {
+	//initI18n()
+
 	root := cmd.NewRootCmd()
 	if len(os.Args) == 1 {
 		os.Args = append(os.Args, "ui")

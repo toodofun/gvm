@@ -23,6 +23,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	gvmhttp "github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -467,9 +469,12 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 		logger.Infof("✅ 步骤 %d/3 完成: %s", i+1, cmdInfo.description)
 	}
 	logger.Infof(
-		"Version %s was successfully installed in %s",
-		version.Version.String(),
-		filepath.Join(installRoot, "bin"),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  version.Version.String(),
+			"location": filepath.Join(installRoot, "bin"),
+		}),
 	)
 	return nil
 }
