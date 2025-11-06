@@ -87,6 +87,7 @@ func InitI18n(ctx context.Context) {
 }
 
 func GetTranslate(id string, templateData map[string]any) string {
+	InitI18n(context.Background())
 	res, err := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID:    id,
 		TemplateData: templateData,
@@ -103,6 +104,7 @@ func GetTranslate(id string, templateData map[string]any) string {
 }
 
 func SetLanguage(language string) error {
+	InitI18n(context.Background())
 	localizer = i18n.NewLocalizer(bundle, language)
 	config := core.GetConfig()
 	config.Language = language

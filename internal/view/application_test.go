@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/gdamore/tcell/v2"
 )
 
 func TestApplication_Run(t *testing.T) {
+	i18n.InitI18n(context.Background())
 	screen := tcell.NewSimulationScreen("UTF-8")
 	if err := screen.Init(); err != nil {
 		t.Fatalf("failed to init simulation screen: %v", err)

@@ -94,6 +94,7 @@ func TestNewRootCmd(t *testing.T) {
 		"current",
 		"ui",
 		"version",
+		"set-language",
 		"add",
 	}
 
