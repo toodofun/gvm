@@ -16,8 +16,8 @@ package i18n
 
 import (
 	"context"
+	"embed"
 	"io/fs"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -32,6 +32,9 @@ import (
 	"github.com/toodofun/gvm/internal/util/file"
 )
 
+//go:embed *.yaml
+var i18nFS embed.FS
+
 var bundle *i18n.Bundle
 var localizer *i18n.Localizer
 var once sync.Once
@@ -44,7 +47,7 @@ func InitI18n(ctx context.Context) {
 		logger.Debugf("bundle default language: %s", bundle.LanguageTags()[0])
 		bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
 
-		if err := filepath.WalkDir("i18n", func(path string, d fs.DirEntry, err error) error {
+		if err := fs.WalkDir(i18nFS, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -56,7 +59,12 @@ func InitI18n(ctx context.Context) {
 			filename := strings.ToLower(d.Name())
 			if strings.HasSuffix(filename, ".yaml") || strings.HasSuffix(filename, ".yml") {
 				logger.Debugf("find i18n translate file: %s", path)
-				_, err := bundle.LoadMessageFile(path)
+				data, err := i18nFS.ReadFile(path)
+				if err != nil {
+					logger.Errorf("failed to read i18n translate file: %s, %v", path, err)
+					return nil
+				}
+				_, err = bundle.ParseMessageFileBytes(data, path)
 				if err != nil {
 					logger.Errorf("can not load i18n translate file: %v", err)
 				}
