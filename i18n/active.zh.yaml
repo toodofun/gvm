@@ -104,3 +104,17 @@ languages:
     other: "解压安装包..."
   installComplete:
     other: "{{ .lang }} {{ .version }} 安装完成! 位置: {{ .location }}"
+  setDefaultInfo:
+    other: "确定要将 {{ .version }} 设置为默认版本吗？"
+  alreadyDefault:
+    other: "{{ .version }} 已经是默认版本了"
+  setDefault:
+    other: "设备 {{ .version }} 为默认版本"
+  setDefaultError:
+    other: "设置 {{ .version }} 为默认版本出错了: {{ .error }}"
+  uninstallInfo:
+    other: "确定要卸载 {{ .version }} 版本吗？"
+  uninstall:
+    other: "卸载 {{ .version }}"
+  uninstallError:
+    other: "卸载 {{ .version }} 版本出错了: {{ .error }}"

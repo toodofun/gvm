@@ -23,6 +23,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/toodofun/gvm/i18n"
+
 	goversion "github.com/hashicorp/go-version"
 
 	"github.com/toodofun/gvm/internal/core"
@@ -108,7 +110,11 @@ func (g *GVM) GetDefaultVersion(ctx context.Context) *core.InstalledVersion {
 
 func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) error {
 	logger := log.GetLogger(ctx)
-	logger.Infof("Install remote version %s", remoteVersion.Origin)
+	logger.Debugf("Install remote version %s", remoteVersion.Origin)
+	logger.Infof("🐹 %s", i18n.GetTranslate("languages.startInstall", map[string]any{
+		"lang":    lang,
+		"version": remoteVersion.Version.String(),
+	}))
 	tarType := "tar.gz"
 	if runtime.GOOS == "windows" {
 		tarType = "zip"
@@ -133,7 +139,7 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 		return fmt.Errorf("version %s not found", remoteVersion.Version.String())
 	}
 
-	logger.Infof("Downloading %s size: %s", url, head.Get("Content-Length"))
+	logger.Debugf("Downloading %s size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
 		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()), fmt.Sprintf("gvm-%s-%s-%s.%s", remoteVersion.Origin, runtime.GOOS, runtime.GOARCH, tarType))
 	logger.Infof("")
@@ -159,9 +165,12 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 	}
 
 	logger.Infof(
-		"Version %s was successfully installed in %s",
-		remoteVersion.Version.String(),
-		filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  remoteVersion.Version.String(),
+			"location": filepath.Join(path.GetLangRoot(lang), remoteVersion.Version.String()),
+		}),
 	)
 	return nil
 }

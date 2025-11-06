@@ -94,10 +94,24 @@ page:
       other: "Install"
 languages:
   startInstall:
-    other: "Start installing {{ .lang }} {{ .version }}"
+    other: "Start install {{ .lang }} {{ .version }}"
   download:
     other: "Downloading"
   extracting:
     other: "Extracting package..."
   installComplete:
     other: "{{ .lang }} {{ .version }} installation complete! location: {{ .location }}"
+  setDefaultInfo:
+    other: "Are you sure you want to set {{ .version }} as the default?"
+  alreadyDefault:
+    other: "{{ .version }} is already the default version."
+  setDefault:
+    other: "Set {{ .version }} as default"
+  setDefaultError:
+    other: "Failed to set {{ .version }} as default: {{ .error }}"
+  uninstallInfo:
+    other: "Are you sure you want to uninstall {{ .version }}?"
+  uninstall:
+    other: "Uninstall {{ .version }}"
+  uninstallError:
+    other: "Uninstall {{ .version }} Failed: {{ .error }}"

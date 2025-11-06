@@ -73,15 +73,21 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 				v := vi.(*version)
 				if v.isInstalled {
 					p.app.Confirm(
-						fmt.Sprintf("Are you sure you want to set %s as default", v.Version.String()),
+						i18n.GetTranslate("languages.setDefaultInfo", map[string]interface{}{
+							"version": v.Version.String(),
+						}),
 						func() {
 							if v.isDefault {
 								p.app.Alert(
-									fmt.Sprintf("%s is already the default version", v.Version.String()),
+									i18n.GetTranslate("languages.alreadyDefault", map[string]interface{}{
+										"version": v.Version.String(),
+									}),
 									p.table,
 								)
 							} else {
-								p.doAsync(fmt.Sprintf("Set %s as default", v.Version.String()), func() (interface{}, error) {
+								p.doAsync(i18n.GetTranslate("languages.setDefault", map[string]interface{}{
+									"version": v.Version.String(),
+								}), func() (interface{}, error) {
 									if err := p.app.lang.SetDefaultVersion(p.app.ctx, v.Version.String()); err != nil {
 										return nil, err
 									}
@@ -89,8 +95,14 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 								}, func(i interface{}) {
 									p.refresh()
 								}, func(err error) {
-									logger.Errorf("Set %s as default error: %+v", v.Version.String(), err)
-									p.app.Alert(fmt.Sprintf("Set %s as default failed: %+v", v.Version.String(), err), p.table)
+									logger.Errorf(i18n.GetTranslate("languages.setDefaultError", map[string]interface{}{
+										"version": v.Version.String(),
+										"error":   err.Error(),
+									}))
+									p.app.Alert(i18n.GetTranslate("languages.setDefaultError", map[string]interface{}{
+										"version": v.Version.String(),
+										"error":   err.Error(),
+									}), p.table)
 								})
 							}
 						},
@@ -118,13 +130,20 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 					return evt
 				}
 				v := vi.(*version)
-				p.app.Confirm(fmt.Sprintf("Are you sure you want to uninstall %s", v.Version.String()), func() {
-					p.doAsync(fmt.Sprintf("Uninstalling %s", v.Version.String()), func() (interface{}, error) {
+				p.app.Confirm(i18n.GetTranslate("languages.uninstallInfo", map[string]any{
+					"version": v.Version.String(),
+				}), func() {
+					p.doAsync(i18n.GetTranslate("languages.uninstall", map[string]any{
+						"version": v.Version.String(),
+					}), func() (interface{}, error) {
 						return nil, p.app.lang.Uninstall(p.app.ctx, v.Version.String())
 					}, func(i interface{}) {
 						p.refresh()
 					}, func(err error) {
-						p.app.Alert(fmt.Sprintf("Uninstall failed: %+v", err), p.table)
+						p.app.Alert(i18n.GetTranslate("languages.uninstallError", map[string]any{
+							"version": v.Version.String(),
+							"error":   err.Error(),
+						}), p.table)
 					})
 				}, func() {
 					// nothing to do

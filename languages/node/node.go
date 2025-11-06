@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -151,8 +153,11 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	if !ok {
 		return fmt.Errorf("%s version not found", version.Origin)
 	}
-	logger.Infof("🟢 开始安装 Node.js %s", version.Version.String())
-	logger.Infof("📦 Node.js 使用预编译包，安装通常需要 1-2 分钟...")
+	logger.Infof("🐹 %s", i18n.GetTranslate("languages.startInstall", map[string]any{
+		"lang":    lang,
+		"version": version.Version.String(),
+	}))
+	//logger.Infof("📦 Node.js 使用预编译包，安装通常需要 1-2 分钟...")
 
 	name, err := getPackageName(nodeInfo, version)
 	if err != nil {
@@ -198,9 +203,12 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 		return err
 	}
 	logger.Infof(
-		"✅ Node.js %s 安装成功! 安装位置: %s",
-		version.Version.String(),
-		filepath.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  version.Version.String(),
+			"location": filepath.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
+		}),
 	)
 	return nil
 }
