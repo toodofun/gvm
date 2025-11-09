@@ -4,9 +4,12 @@
 </div>
 
 ![Workflow ci](https://github.com/toodofun/gvm/actions/workflows/gvm.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/toodofun/gvm)](https://goreportcard.com/report/github.com/toodofun/gvm)
+[![release](https://img.shields.io/github/release-pre/toodofun/gvm.svg)](https://github.com/toodofun/gvm/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/toodo/gvm.svg?maxAge=604800)](https://hub.docker.com/r/toodo/gvm/)
 [![GitHub License](https://img.shields.io/github/license/toodofun/gvm)](https://github.com/toodofun/gvm)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/toodofun/gvm?logo=go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/toodofun/gvm)](https://goreportcard.com/report/github.com/toodofun/gvm)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/toodofun/gvm/total)](https://github.com/MR5356/toodofun/gvm)
 [![Test Coverage](https://codecov.io/gh/toodofun/gvm/branch/master/graph/badge.svg)](https://codecov.io/gh/toodofun/gvm)
 
 <p align="center">
@@ -26,15 +29,18 @@ Usage:
   gvm [command]
 
 Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  current     Show Current version of a language
-  help        Help about any command
-  install     Install a specific version of a language
-  ls          List installed versions of language
-  ls-remote   List remote versions of language
-  ui          Run in the terminal UI
-  uninstall   Uninstall a specific version of a language
-  use         Set default versions of language
+  add          Add a new addon to the GVM
+  completion   Generate the autocompletion script for the specified shell
+  current      Show Current version of a language
+  help         Help about any command
+  install      Install a specific version of a language
+  ls           List installed versions of language
+  ls-remote    List remote versions of language
+  set-language Set default application language, supported languages: en, zh
+  ui           Run in the terminal UI
+  uninstall    Uninstall a specific version of a language
+  use          Set default versions of language
+  version      Print version information
 
 Flags:
   -d, --debug   debug mode
@@ -56,27 +62,31 @@ Use "gvm [command] --help" for more information about a command.
 ## 🐍&nbsp; 支持的编程语言
 - [x] Golang
 - [x] Node
-- [ ] Java
-- [ ] Python
+- [x] Java (zulu)
+- [x] Python
 - [ ] C#
 - [ ] C++/C
-- [ ] Ruby
-- [ ] Rust
+- [x] Ruby
+- [x] Rust
 
 ## 🌈&nbsp; 截图
-### 语言页面
-![languages](assets/languages.png)
+![usage](assets/gvm.gif)
 
-### &nbsp; 版本管理页面
-![language-versions](assets/language-versions.png)
+## 🐳&nbsp; Docker Container
+### Release
+```
+docker pull toodo/gvm
+docker run -it -e TERM=xterm toodo/gvm ui
+```
+🔔 **Note:** 以上示例在交互式终端中运行 `gvm ui` 命令。
+要针对其他兼容服务器运行 `gvm`，或以交互方式进入容器进行调试或检查，请使用:
+
+```
+docker run -it --entrypoint=/bin/sh toodo/gvm
+```
+
 
 ## 📦&nbsp; 安装
-
-### 🐳 Docker 容器
-```
-docker pull toodofun/gvm
-docker run -it --entrypoint=/bin/sh toodofun/gvm
-```
 
 ### 📁 二进制安装
 

@@ -129,3 +129,63 @@ func TestUnZip(t *testing.T) {
 		}
 	}
 }
+
+func TestUnTarXz(t *testing.T) {
+	// 创建临时目录
+	tempDir, err := os.MkdirTemp("", "test_untar_xz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	// 创建测试用的 tar.xz 文件（使用系统命令）
+	testContent := "Hello, World!"
+	testFile := filepath.Join(tempDir, "test.txt")
+	err = os.WriteFile(testFile, []byte(testContent), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// 创建 tar.xz 文件
+	tarXzFile := filepath.Join(tempDir, "test.tar.xz")
+
+	// 检查系统是否有 tar 命令
+	ctx := context.Background()
+
+	// 模拟测试（因为创建真实的 tar.xz 文件需要系统依赖）
+	t.Run("UnTarXz with missing file", func(t *testing.T) {
+		dest := filepath.Join(tempDir, "dest")
+		err := os.MkdirAll(dest, 0755)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// 测试不存在的文件
+		err = UnTarXz(ctx, "nonexistent.tar.xz", dest)
+		if err == nil {
+			t.Error("expected error for nonexistent file")
+		}
+	})
+
+	t.Run("UnTarXz with invalid destination", func(t *testing.T) {
+		// 测试无效的目标目录（文件路径）
+		invalidDest := testFile // 使用文件路径作为目标目录
+		err = UnTarXz(ctx, tarXzFile, invalidDest)
+		if err == nil {
+			t.Error("expected error for invalid destination")
+		}
+	})
+
+	t.Run("UnTarXz directory creation", func(t *testing.T) {
+		// 测试目标目录创建
+		dest := filepath.Join(tempDir, "new_dest")
+
+		// 即使文件不存在，至少应该能创建目录
+		err = UnTarXz(ctx, "nonexistent.tar.xz", dest)
+
+		// 检查目录是否被创建
+		if _, err := os.Stat(dest); os.IsNotExist(err) {
+			t.Error("destination directory was not created")
+		}
+	})
+}

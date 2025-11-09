@@ -16,12 +16,16 @@ package http
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/toodofun/gvm/i18n"
+	"github.com/toodofun/gvm/internal/core"
 
 	"resty.dev/v3"
 
@@ -139,8 +143,9 @@ func TestClient_Get(t *testing.T) {
 
 // Download 单测示例，简单测试创建目录和下载失败场景
 func TestDownload(t *testing.T) {
+	i18n.InitI18n(context.Background())
 	c := Default()
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), core.ContextLogWriterKey, io.Discard)
 	tmpDir := t.TempDir()
 
 	// 模拟一个 HTTP 文件服务器

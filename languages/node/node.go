@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -76,7 +78,7 @@ func (v *Version) ConvertToLTS() string {
 		}
 		return ""
 	case string:
-		return val
+		return fmt.Sprintf("LTS: %s", val)
 	default:
 		return ""
 	}
@@ -151,7 +153,12 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 	if !ok {
 		return fmt.Errorf("%s version not found", version.Origin)
 	}
-	logger.Infof("Installing version %s", version.Version.String())
+	logger.Infof("🐹 %s", i18n.GetTranslate("languages.startInstall", map[string]any{
+		"lang":    lang,
+		"version": version.Version.String(),
+	}))
+	//logger.Infof("📦 Node.js 使用预编译包，安装通常需要 1-2 分钟...")
+
 	name, err := getPackageName(nodeInfo, version)
 	if err != nil {
 		return err
@@ -191,14 +198,17 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 		return fmt.Errorf("failed to download version %s: %w", version, err)
 	}
 
-	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
+	logger.Infof("📁 解压 Node.js 安装包...")
 	if err = unPackage(ctx, file, name, version.Version.String()); err != nil {
 		return err
 	}
 	logger.Infof(
-		"Version %s was successfully installed in %s",
-		version.Version.String(),
-		filepath.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  version.Version.String(),
+			"location": filepath.Join(core.GetRootDir(), lang, version.Version.String(), lang, "bin"),
+		}),
 	)
 	return nil
 }

@@ -15,15 +15,39 @@
 package main
 
 import (
+	"os"
+
 	"github.com/toodofun/gvm/cmd"
+	_ "github.com/toodofun/gvm/languages/github"
 	_ "github.com/toodofun/gvm/languages/golang"
+	_ "github.com/toodofun/gvm/languages/gvm"
+	_ "github.com/toodofun/gvm/languages/java"
 	_ "github.com/toodofun/gvm/languages/node"
+	_ "github.com/toodofun/gvm/languages/python"
+	_ "github.com/toodofun/gvm/languages/ruby"
+	_ "github.com/toodofun/gvm/languages/rust"
 
 	"github.com/sirupsen/logrus"
 )
 
+//func initI18n() {
+//	bundle := i18n.NewBundle(language.English)
+//	bundle.RegisterUnmarshalFunc("yaml", yaml.Unmarshal)
+//
+//	_, err := bundle.LoadMessageFile("i18n/active.zh.yaml")
+//	if err != nil {
+//		logrus.Fatalf("can not load i18n translate file: %v", err)
+//	}
+//}
+
 func main() {
-	if err := cmd.NewRootCmd().Execute(); err != nil {
+	//initI18n()
+
+	root := cmd.NewRootCmd()
+	if len(os.Args) == 1 {
+		os.Args = append(os.Args, "ui")
+	}
+	if err := root.Execute(); err != nil {
 		logrus.Fatalf("%v", err)
 	}
 }

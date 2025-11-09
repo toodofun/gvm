@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/toodofun/gvm/internal/log"
@@ -225,5 +226,36 @@ func UnPkg(pkgPath, destDir string) error {
 	if err := cmd2.Run(); err != nil {
 		return fmt.Errorf("pax unpack failed: %w", err)
 	}
+	return nil
+}
+
+// UnTarXz 解压 tar.xz 文件
+func UnTarXz(ctx context.Context, tarXzName string, dest string) error {
+	logger := log.GetLogger(ctx)
+
+	// 确保目标目录存在
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return fmt.Errorf("failed to create destination directory: %w", err)
+	}
+
+	// 在不同平台上使用不同的命令
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		// Windows 上可能需要使用 7zip 或其他工具
+		// 这里假设有 tar 命令可用（Git Bash 或 WSL）
+		cmd = exec.CommandContext(ctx, "tar", "-xJf", tarXzName, "-C", dest)
+	} else {
+		// Unix-like 系统（Linux, macOS）
+		cmd = exec.CommandContext(ctx, "tar", "-xJf", tarXzName, "-C", dest)
+	}
+
+	cmd.Stdout = log.GetStdout(ctx)
+	cmd.Stderr = log.GetStderr(ctx)
+
+	logger.Infof("Extracting %s to %s", tarXzName, dest)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to extract tar.xz: %w", err)
+	}
+
 	return nil
 }

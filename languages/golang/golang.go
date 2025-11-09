@@ -18,9 +18,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/toodofun/gvm/i18n"
 
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
@@ -103,6 +106,8 @@ func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
+	gopath := filepath.Join(path.GetLangRoot(g.Name()), "gopath")
+	_ = os.MkdirAll(gopath, os.ModePerm)
 	envs := []env.KV{
 		{
 			Key:    "PATH",
@@ -110,8 +115,17 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 			Append: true,
 		},
 		{
-			Key:   "GOPATH",
+			Key:   "GOROOT",
 			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go"),
+		},
+		{
+			Key:   "GOPATH",
+			Value: gopath,
+		},
+		{
+			Key:    "PATH",
+			Value:  filepath.Join(gopath, "bin"),
+			Append: true,
 		},
 	}
 	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
@@ -131,7 +145,12 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 	if err, exist := languages.HasInstall(ctx, g, *version.Version); err != nil || exist {
 		return err
 	}
-	logger.Infof("Installing version %s", version.Version.String())
+	logger.Infof("🐹 %s", i18n.GetTranslate("languages.startInstall", map[string]any{
+		"lang":    lang,
+		"version": version.Version.String(),
+	}))
+	//logger.Debugf("📦 Go 使用预编译包，安装通常需要 30 秒到 2 分钟...")
+
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
 	if runtime.GOOS == "windows" {
@@ -161,14 +180,14 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 		return fmt.Errorf("version %s not found at %s, status code: %d", version, url, code)
 	}
 
-	logger.Infof("Downloading: %s, size: %s", url, head.Get("Content-Length"))
+	logger.Debugf("Downloading: %s, size: %s", url, head.Get("Content-Length"))
 	file, err := http.Default().
 		Download(ctx, url, filepath.Join(path.GetLangRoot(lang), version.Version.String()), fmt.Sprintf("%s.%s-%s.tar.gz", version.Origin, runtime.GOOS, "amd64"))
 	logger.Infof("")
 	if err != nil {
 		return fmt.Errorf("failed to download version %s: %w", version.Version.String(), err)
 	}
-	logger.Infof("Extracting: %s, size: %s", url, head.Get("Content-Length"))
+	logger.Infof("📁 %s", i18n.GetTranslate("languages.extracting", nil))
 	if strings.HasSuffix(url, ".tar.gz") {
 		if err := compress.UnTarGz(ctx, file, filepath.Join(core.GetRootDir(), "go", version.Version.String())); err != nil {
 			logger.Warnf("Failed to untar version %s: %s", version.Version.String(), err)
@@ -181,10 +200,17 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 		}
 	}
 
+	if err = os.RemoveAll(file); err != nil {
+		logger.Warnf("Failed to clean %s: %v", file, err)
+	}
+
 	logger.Infof(
-		"Version %s was successfully installed in %s",
-		version.Version.String(),
-		filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
+		"✅ %s",
+		i18n.GetTranslate("languages.installComplete", map[string]any{
+			"lang":     lang,
+			"version":  version.Version.String(),
+			"location": filepath.Join(path.GetLangRoot(lang), version.Version.String(), "go", "bin"),
+		}),
 	)
 	return nil
 }

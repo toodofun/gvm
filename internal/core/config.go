@@ -17,28 +17,80 @@ package core
 import (
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/toodofun/gvm/internal/util/file"
 )
 
 const (
-	defaultHomeDir = "/opt"
-	defaultDir     = ".gvm"
-
+	defaultDir                 = ".gvm"
 	ContextLogWriterKey ctxKey = "context.log.writer"
 )
 
 var Version = "1.0.0-dev"
 
+type Config struct {
+	Language string         `json:"language"`
+	Addon    []LanguageItem `json:"addon"`
+}
+
+type LanguageItem struct {
+	Name           string `json:"name"`
+	Provider       string `json:"provider"`
+	DataSourceName string `json:"dsn"`
+}
+
 type ctxKey string
 
 var GetRootDir = func() string {
-	home, err := os.UserConfigDir()
-	if err != nil {
-		home = defaultHomeDir
+	// 1. 优先使用环境变量 GVM_ROOT
+	if custom := os.Getenv("GVM_ROOT"); custom != "" {
+		if !strings.Contains(custom, " ") {
+			ensureDir(custom)
+			return custom
+		}
 	}
 
-	rootDir := filepath.Join(home, defaultDir)
-	if err := os.MkdirAll(rootDir, 0755); err != nil {
+	// 2. 其次使用 XDG 配置目录
+	if cfgDir, err := os.UserConfigDir(); err == nil && cfgDir != "" {
+		path := filepath.Join(cfgDir, defaultDir)
+		if !strings.Contains(path, " ") {
+			ensureDir(path)
+			return path
+		}
+	}
+
+	// 3. 再退回到 $HOME/.gvm
+	home := os.Getenv("HOME")
+	if home != "" {
+		path := filepath.Join(home, defaultDir)
+		if !strings.Contains(path, " ") {
+			ensureDir(path)
+			return path
+		}
+	}
+
+	// 4. 最后兜底到 /opt/gvm
+	fallback := filepath.Join("/opt", "gvm")
+	ensureDir(fallback)
+	return fallback
+}
+
+// ensureDir 创建目录并在失败时 panic
+func ensureDir(dir string) {
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		panic("无法创建配置目录: " + err.Error())
 	}
-	return rootDir
+}
+
+func GetConfigPath() string {
+	return filepath.Join(GetRootDir(), "config.json")
+}
+
+func GetConfig() *Config {
+	config := new(Config)
+	if err := file.ReadJSONFile(GetConfigPath(), config); err != nil {
+		return config
+	}
+	return config
 }

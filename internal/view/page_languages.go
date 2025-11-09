@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/toodofun/gvm/internal/core"
 
 	"github.com/gdamore/tcell/v2"
@@ -43,20 +45,24 @@ func NewPageLanguages(app *Application) *PageLanguages {
 
 func (p *PageLanguages) Init(ctx context.Context) {
 	p.BindKeys(KeyMap{
-		tcell.KeyEnter: NewKeyAction("Enter", func(evt *tcell.EventKey) *tcell.EventKey {
-			languageNameI, ok := p.GetSelection()
-			if !ok {
+		tcell.KeyEnter: NewKeyAction(
+			i18n.GetTranslate("page.language.keyAction.enter", nil),
+			func(evt *tcell.EventKey) *tcell.EventKey {
+				languageNameI, ok := p.GetSelection()
+				if !ok {
+					return evt
+				}
+				languageName := languageNameI.(string)
+				lang, ok := core.GetLanguage(languageName)
+				if !ok {
+					p.app.Alert(fmt.Sprintf("language not found: %s", languageName), p.table)
+				}
+				p.app.lang = lang
+				p.app.SwitchPage(pageLanguageVersions)
 				return evt
-			}
-			languageName := languageNameI.(string)
-			lang, ok := core.GetLanguage(languageName)
-			if !ok {
-				p.app.Alert(fmt.Sprintf("language not found: %s", languageName), p.table)
-			}
-			p.app.lang = lang
-			p.app.SwitchPage(pageLanguageVersions)
-			return evt
-		}, true),
+			},
+			true,
+		),
 	})
 }
 

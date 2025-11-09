@@ -22,8 +22,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/i18n"
 	"github.com/toodofun/gvm/internal/log"
+	v "github.com/toodofun/gvm/internal/util/version"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -33,7 +34,7 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 	logger := log.GetLogger(ctx)
 	u, err := user.Current()
 	if err != nil {
-		u = &user.User{Name: "unknow"}
+		u = &user.User{Username: "unknow"}
 	}
 
 	hn, err := os.Hostname()
@@ -46,18 +47,38 @@ func (a *Application) createHeader(ctx context.Context) tview.Primitive {
 		Value string
 	}
 	descMap := []KV{
-		{Key: "[yellow] Hostname[-:-:-]", Value: hn},
-		{Key: "[yellow] System[-:-:-]", Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)},
-		{Key: "[yellow] GVM Rev.[-:-:-]", Value: core.Version},
-		{Key: "[yellow] Username[-:-:-]", Value: u.Name},
-		{Key: "[yellow] Loglevel[-:-:-]", Value: log.GetLevel()},
+		{Key: "[yellow] " + i18n.GetTranslate("header.hostname", nil) + "[-:-:-]", Value: hn},
+		{
+			Key:   "[yellow] " + i18n.GetTranslate("header.system", nil) + "[-:-:-]",
+			Value: fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		},
+		{Key: "[yellow] " + i18n.GetTranslate("header.revision", nil) + "[-:-:-]", Value: v.Get().GitVersion},
+		{Key: "[yellow] " + i18n.GetTranslate("header.username", nil) + "[-:-:-]", Value: u.Username},
+		{Key: "[yellow] " + i18n.GetTranslate("header.logLevel", nil) + "[-:-:-]", Value: log.GetLevel()},
 	}
+
 	desc := tview.NewTable().
 		SetBorders(false)
 	for i, kv := range descMap {
 		desc.SetCell(i, 0, tview.NewTableCell(kv.Key))
 		desc.SetCell(i, 1, tview.NewTableCell(kv.Value))
 	}
+
+	// 异步检查更新
+	go func() {
+		has, latest := v.CheckUpdate(ctx)
+		if has {
+			a.QueueUpdateDraw(func() {
+				newRow := desc.GetRowCount()
+				desc.SetCell(
+					newRow,
+					0,
+					tview.NewTableCell("[blue::b] "+i18n.GetTranslate("header.newVersion", nil)+"[-:-:-]"),
+				)
+				desc.SetCell(newRow, 1, tview.NewTableCell("[blue::b]"+latest+"❗️[-:-:-]"))
+			})
+		}
+	}()
 
 	a.help = tview.NewFlex()
 

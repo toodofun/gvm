@@ -34,3 +34,9 @@ func TestGolang_ListInstalledVersions(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, installedVersions)
 }
+
+func TestGolang_GetDefaultVersion(t *testing.T) {
+	golang := &Golang{}
+	defaultVersion := golang.GetDefaultVersion(context.Background())
+	assert.NotNil(t, defaultVersion)
+}

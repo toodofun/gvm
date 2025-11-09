@@ -1,0 +1,117 @@
+# Copyright 2025 The Toodofun Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http:www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+global:
+  loading:
+    title:
+      other: "Loading..."
+    loadingInfo:
+      other: "Loading {{ .lang }} version info"
+  confirm:
+    confirm:
+      other: "Confirm"
+    cancel:
+      other: "Cancel"
+  alert:
+    title:
+      other: "ERROR"
+    dismiss:
+      other: "Dismiss"
+  info:
+    title:
+      other: "INFO"
+    dismiss:
+      other: "Dismiss"
+header:
+  hostname:
+    other: "Hostname"
+  system:
+    other: "System"
+  revision:
+    other: "GVM Rev."
+  username:
+    other: "Username"
+  logLevel:
+    other: "LogLevel"
+  newVersion:
+    other: "New Ver."
+keyAction:
+  colon:
+    other: "Enter command mode"
+  slash:
+    other: "Enter filter mode"
+  g:
+    other: "Go to top"
+  G:
+    other: "Go to bottom"
+  colonQ:
+    other: "Quit"
+page:
+  language:
+    fullName:
+      other: "Global Version Manager"
+    table:
+      header:
+        language:
+          other: "Language/Application"
+    keyAction:
+      enter:
+        other: "Enter"
+  languageVersion:
+    fullName:
+      other: "{{ .lang }} Versions"
+    table:
+      header:
+        version:
+          other: "Version"
+        comment:
+          other: "Comment"
+        location:
+          other: "Location"
+        installed:
+          other: "Installed"
+    keyAction:
+      i:
+        other: "Filter by installed"
+      enter:
+        other: "Install or set as default"
+      esc:
+        other: "Go back"
+      ctrlD:
+        other: "Uninstall selected"
+  installer:
+    install:
+      other: "Install"
+languages:
+  startInstall:
+    other: "Start install {{ .lang }} {{ .version }}"
+  download:
+    other: "Downloading"
+  extracting:
+    other: "Extracting package..."
+  installComplete:
+    other: "{{ .lang }} {{ .version }} installation complete! location: {{ .location }}"
+  setDefaultInfo:
+    other: "Are you sure you want to set {{ .version }} as the default?"
+  alreadyDefault:
+    other: "{{ .version }} is already the default version."
+  setDefault:
+    other: "Set {{ .version }} as default"
+  setDefaultError:
+    other: "Failed to set {{ .version }} as default: {{ .error }}"
+  uninstallInfo:
+    other: "Are you sure you want to uninstall {{ .version }}?"
+  uninstall:
+    other: "Uninstall {{ .version }}"
+  uninstallError:
+    other: "Uninstall {{ .version }} Failed: {{ .error }}"

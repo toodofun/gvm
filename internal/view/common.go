@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/toodofun/gvm/i18n"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -29,16 +31,18 @@ func (a *Application) Confirm(msg string, onConfirm, onCancel func()) {
 	modal.SetText(msg)
 	modal.SetTextColor(tcell.ColorBlue)
 	modal.SetBorder(true).
-		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< confirm >")).
+		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< "+i18n.GetTranslate("global.confirm.title", nil)+" >")).
 		SetBorderColor(tcell.ColorBlue)
-	modal.AddButtons([]string{"Confirm", "Cancel"})
+	modal.AddButtons(
+		[]string{i18n.GetTranslate("global.confirm.confirm", nil), i18n.GetTranslate("global.confirm.cancel", nil)},
+	)
 	modal.SetButtonBackgroundColor(tcell.ColorGray)
 	modal.SetButtonTextColor(tcell.ColorBlack)
 	modal.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorBlue))
 	modal.SetFocus(0)
 
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-		if buttonLabel == "Confirm" {
+		if buttonLabel == i18n.GetTranslate("global.confirm.confirm", nil) {
 			onConfirm()
 		} else {
 			onCancel()
@@ -55,9 +59,9 @@ func (a *Application) Info(msg string, after tview.Primitive) {
 	modal.SetBackgroundColor(tcell.ColorBlack)
 	modal.SetText(msg)
 	modal.SetBorder(true).
-		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< info >")).
+		SetTitle(fmt.Sprintf(" [blue]%s[-:-:-] ", "< "+i18n.GetTranslate("global.info.title", nil)+" >")).
 		SetBorderColor(tcell.ColorBlue)
-	modal.AddButtons([]string{"Dismiss"})
+	modal.AddButtons([]string{i18n.GetTranslate("global.info.dismiss", nil)})
 	modal.SetButtonBackgroundColor(tcell.ColorGray)
 	modal.SetButtonTextColor(tcell.ColorBlack)
 	modal.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorBlue))
@@ -77,9 +81,9 @@ func (a *Application) Alert(msg string, after tview.Primitive) {
 	modal.SetText(fmt.Sprintf("< %s >\n%s", msg, errorMsg))
 	modal.SetTextColor(tcell.ColorRed)
 	modal.SetBorder(true).
-		SetTitle(fmt.Sprintf(" [red]%s[-:-:-] ", "< error >")).
+		SetTitle(fmt.Sprintf(" [red]%s[-:-:-] ", "< "+i18n.GetTranslate("global.alert.title", nil)+" >")).
 		SetBorderColor(tcell.ColorBlue)
-	modal.AddButtons([]string{"Dismiss"})
+	modal.AddButtons([]string{i18n.GetTranslate("global.alert.dismiss", nil)})
 	modal.SetButtonBackgroundColor(tcell.ColorGray)
 	modal.SetButtonTextColor(tcell.ColorBlack)
 	modal.SetButtonActivatedStyle(tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorBlue))
@@ -98,7 +102,7 @@ func (a *Application) ShowLoading(message string, name string) {
 	modal.Box.SetBackgroundColor(tcell.ColorBlack)
 	modal.SetBackgroundColor(tcell.ColorBlack)
 	modal.SetBorder(true)
-	modal.SetTitle(" [blue]Loading[-] ")
+	modal.SetTitle(" [blue] < " + i18n.GetTranslate("global.loading.title", nil) + " >[-] ")
 	modal.SetBorderColor(tcell.ColorBlue)
 
 	// 动画字符
@@ -106,7 +110,11 @@ func (a *Application) ShowLoading(message string, name string) {
 	spinnerIndex := 0
 
 	// 设置初始文本
-	modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinners[0], message))
+	modal.SetText(
+		fmt.Sprintf("[yellow]%s %s[-:-:-]", spinners[0], i18n.GetTranslate("global.loading.loadingInfo", map[string]any{
+			"lang": message,
+		})),
+	)
 
 	// 创建一个 goroutine 来更新动画
 	go func() {
@@ -121,7 +129,15 @@ func (a *Application) ShowLoading(message string, name string) {
 			a.QueueUpdateDraw(func() {
 				if a.pages.HasPage(name) {
 					spinner := spinners[spinnerIndex%len(spinners)]
-					modal.SetText(fmt.Sprintf("[yellow]%s %s...\n\n[blue]Just a moment...[-:-:-]", spinner, message))
+					modal.SetText(
+						fmt.Sprintf(
+							"[yellow]%s %s[-:-:-]",
+							spinner,
+							i18n.GetTranslate("global.loading.loadingInfo", map[string]any{
+								"lang": message,
+							}),
+						),
+					)
 					spinnerIndex++
 				}
 			})
