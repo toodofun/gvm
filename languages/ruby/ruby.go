@@ -41,7 +41,7 @@ func (r *Ruby) Name() string {
 	return lang
 }
 
-// 获取远程Ruby版本列表 - 直接使用回退版本列表（支持更广泛的版本）
+// ListRemoteVersions 获取远程Ruby版本列表 - 直接使用回退版本列表（支持更广泛的版本）
 func (r *Ruby) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	// 直接返回常见的 Ruby 稳定版本列表
 	// 这些版本可以通过官方源码包或预编译包安装

@@ -70,7 +70,6 @@ issues:
   exclude-dirs:
     - "e2e"
     - "examples"
-    - "creation"
   # Maximum issues count per one linter (set to 0 to disable)
   max-issues-per-linter: 0
 

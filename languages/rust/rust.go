@@ -55,7 +55,7 @@ func (r *Rust) Name() string {
 	return lang
 }
 
-// 获取远程Rust版本列表
+// ListRemoteVersions 获取远程Rust版本列表
 func (r *Rust) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	logger := log.GetLogger(ctx)
 	res := make([]*core.RemoteVersion, 0)
