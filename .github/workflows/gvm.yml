@@ -17,7 +17,7 @@ jobs:
     name: Lint and Test - ${{ matrix.go-version }}
     strategy:
       matrix:
-        go-version: [1.25.x, 1.24.1]
+        go-version: [1.25.x]
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
@@ -47,15 +47,6 @@ jobs:
       - name: Run unit test and get test coverage
         run: |
           make cover
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: toodofun/gvm
-          files: _output/coverage.out
-        if: |
-          matrix.go-version == '1.24.1'
 
   build:
     runs-on: ubuntu-latest
