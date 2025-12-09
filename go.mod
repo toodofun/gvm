@@ -17,7 +17,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.38.0
+	golang.org/x/sys v0.39.0
 	golang.org/x/text v0.31.0
 	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-beta.4
