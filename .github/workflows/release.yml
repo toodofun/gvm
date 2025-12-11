@@ -32,7 +32,7 @@ jobs:
       - name: Set ldflags variables to shared
         run: echo "LDFLAGS=$(go run scripts/gen-ldflags.go)" >> $GITHUB_ENV
 
-      - uses: wangyoucao577/go-release-action@v1.54
+      - uses: wangyoucao577/go-release-action@v1.55
         with:
           github_token: ${{ secrets.REPO_TOKEN }}
           goos: ${{ matrix.goos }}
