@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/duke-git/lancet/v2 v2.3.8
 	github.com/fatih/color v1.18.0
-	github.com/gdamore/tcell/v2 v2.13.2
+	github.com/gdamore/tcell/v2 v2.13.4
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/jedib0t/go-pretty/v6 v6.7.7
@@ -17,8 +17,8 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/text v0.32.0
 	golang.org/x/sys v0.39.0
+	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
 	resty.dev/v3 v3.0.0-beta.4
 )
