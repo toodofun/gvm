@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/duke-git/lancet/v2 v2.3.8
 	github.com/fatih/color v1.18.0
-	github.com/gdamore/tcell/v2 v2.13.5
+	github.com/gdamore/tcell/v2 v2.13.6
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/jedib0t/go-pretty/v6 v6.7.8
