@@ -182,7 +182,7 @@ func (r *Ruby) installWindowsRuby(ctx context.Context, version *core.RemoteVersi
 // 获取下载 URL - 优先使用预编译包，回退到源码包
 func (r *Ruby) getDownloadURL(version string) (string, string, error) {
 	switch runtime.GOOS {
-	case "windows":
+	case env.RuntimeFromWindows:
 		// Windows 使用 RubyInstaller2 的预编译包
 		filename := fmt.Sprintf("rubyinstaller-%s-1-x64.exe", version)
 		downloadURL := fmt.Sprintf(

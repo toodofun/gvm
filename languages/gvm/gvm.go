@@ -116,7 +116,7 @@ func (g *GVM) Install(ctx context.Context, remoteVersion *core.RemoteVersion) er
 		"version": remoteVersion.Version.String(),
 	}))
 	tarType := "tar.gz"
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == env.RuntimeFromWindows {
 		tarType = "zip"
 	}
 

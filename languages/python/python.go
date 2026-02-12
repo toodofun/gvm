@@ -104,7 +104,7 @@ func (p *Python) getCleanEnvironment() []string {
 	return cleanEnv
 }
 
-// 获取远程Python版本列表
+// ListRemoteVersions 获取远程Python版本列表
 func (p *Python) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	logger := log.GetLogger(ctx)
 	res := make([]*core.RemoteVersion, 0)
@@ -427,7 +427,7 @@ func (p *Python) Install(ctx context.Context, version *core.RemoteVersion) error
 		logger.Infof("🚀 执行: %s", cmdInfo.cmd)
 
 		var cmd *exec.Cmd
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == env.RuntimeFromWindows {
 			cmd = exec.CommandContext(ctx, "cmd", "/C", cmdInfo.cmd)
 		} else {
 			cmd = exec.CommandContext(ctx, "sh", "-c", cmdInfo.cmd)
