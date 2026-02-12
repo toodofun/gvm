@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-FROM golang:1.25.0-alpine3.21 AS build
+FROM golang:1.26.0-alpine3.21 AS build
 
 LABEL maintainer="toodofun@toodofun.com"
 
