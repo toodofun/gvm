@@ -63,6 +63,9 @@ endif
 GO_LDFLAGS := $(shell $(GO) run "$(ROOT_DIR)/scripts/gen-ldflags.go")
 GO_BUILD_FLAGS = --ldflags "$(GO_LDFLAGS)"
 
+# Copy githook scripts when execute makefile
+COPY_GITHOOK:=$(shell cp -f $(ROOT_DIR)/githooks/* $(ROOT_DIR)/.git/hooks/)
+
 # ==============================================================================
 # Includes
 
