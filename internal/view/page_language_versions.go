@@ -95,7 +95,7 @@ func NewPageLanguageVersions(app *Application) *PageLanguageVersions {
 								}, func(i interface{}) {
 									p.refresh()
 								}, func(err error) {
-									logger.Errorf(i18n.GetTranslate("languages.setDefaultError", map[string]interface{}{
+									logger.Error(i18n.GetTranslate("languages.setDefaultError", map[string]interface{}{
 										"version": v.Version.String(),
 										"error":   err.Error(),
 									}))

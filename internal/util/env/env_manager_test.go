@@ -37,7 +37,7 @@ func TestManager_quoteValue(t *testing.T) {
 		{"contains path separator", "foo:bar", "foo:bar"}, // 不加引号
 	}
 
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == RuntimeFromWindows {
 		t.Skip("quoteValue does nothing on Windows")
 	}
 

@@ -114,7 +114,7 @@ func (n *Node) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, e
 }
 
 func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVersion, error) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == env.RuntimeFromWindows {
 		return languages.NewLanguage(n).ListInstalledVersions(ctx, filepath.Join(lang))
 	}
 	return languages.NewLanguage(n).ListInstalledVersions(ctx, filepath.Join(lang, "bin"))
@@ -169,7 +169,7 @@ func (n *Node) Install(ctx context.Context, version *core.RemoteVersion) error {
 		return err
 	}
 	if code != 200 {
-		if runtime.GOOS == "darwin" && code == 404 {
+		if runtime.GOOS == env.RuntimeFromDarwin && code == 404 {
 			url = strings.ReplaceAll(url, runtime.GOARCH, "x64")
 			name = strings.ReplaceAll(name, runtime.GOARCH, "x64")
 			logger.Infof(
@@ -248,22 +248,22 @@ func unPackage(ctx context.Context, file, packageName, version string) error {
 func getPackageName(nodeInfo *Version, version *core.RemoteVersion) (string, error) {
 	arch := runtime.GOARCH
 	switch arch {
-	case "amd64":
-		arch = "x64"
-	case "386":
-		arch = "x86"
-	case "arm":
-		arch = "armv7l"
+	case env.ArchAMD64:
+		arch = env.ArchX64
+	case env.Arch386:
+		arch = env.ArchX86
+	case env.ArchARM:
+		arch = env.ArchArmv7l
 	default:
 		break
 	}
 	var packageType string
 	switch runtime.GOOS {
-	case "linux":
+	case env.RuntimeFromLinux:
 		packageType = fmt.Sprintf("%s-%s.tar.gz", runtime.GOOS, arch)
-	case "windows":
+	case env.RuntimeFromWindows:
 		packageType = fmt.Sprintf("win-%s.zip", arch)
-	case "darwin":
+	case env.RuntimeFromDarwin:
 		packageType = fmt.Sprintf("darwin-%s.tar.gz", arch)
 	default:
 		return "", fmt.Errorf("no supported architectures and platforms")

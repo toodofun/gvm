@@ -68,7 +68,7 @@ func (a *Application) Info(msg string, after tview.Primitive) {
 
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		a.pages.RemovePage(infoKey)
-		a.Application.SetFocus(after)
+		a.SetFocus(after)
 	})
 
 	a.pages.AddPage(infoKey, modal, false, true)
@@ -90,7 +90,7 @@ func (a *Application) Alert(msg string, after tview.Primitive) {
 
 	modal.SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 		a.pages.RemovePage(alertKey)
-		a.Application.SetFocus(after)
+		a.SetFocus(after)
 	})
 
 	a.pages.AddPage(alertKey, modal, false, true)

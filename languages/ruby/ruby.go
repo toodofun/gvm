@@ -172,7 +172,7 @@ func (r *Ruby) installWindowsRuby(ctx context.Context, version *core.RemoteVersi
 	if strings.HasSuffix(filename, ".exe") {
 		logger.Infof("🔧 运行 Ruby 安装程序...")
 		logger.Infof("⚠️  注意: 请在弹出的安装向导中选择安装到: %s", installRoot)
-		return fmt.Errorf("Windows Ruby 安装需要手动运行安装程序: %s", file)
+		return fmt.Errorf("windows Ruby 安装需要手动运行安装程序: %s", file)
 	}
 
 	logger.Infof("✅ Ruby %s 安装成功! 安装位置: %s", versionStr, filepath.Join(installRoot, "bin"))
