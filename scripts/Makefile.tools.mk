@@ -30,11 +30,19 @@ tools.install.%:
 tools.verify.%:
 	@if ! which $* &>/dev/null; then $(MAKE) tools.install.$*; fi
 
+.PHONY: tools.verify.local.%
+tools.verify.local.%:
+	@if ! which $(BIN_DIR)/$* &>/dev/null; then $(MAKE) tools.install.$*; fi
+
 .PHONY: install.golangci-lint
 install.golangci-lint:
-	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	@golangci-lint completion bash > $(HOME)/.golangci-lint.bash
-	@if ! grep -q .golangci-lint.bash $(HOME)/.bashrc; then echo "source \$$HOME/.golangci-lint.bash" >> $(HOME)/.bashrc; fi
+	@if [ ! -f "$(BIN_DIR)/golangci-lint" ]; then \
+		VERSION=$(GOLANG_CI_LINT_VERSION) $(ROOT_DIR)/scripts/install_golangci.sh; \
+		$(BIN_DIR)/golangci-lint completion bash > $(HOME)/.golangci-lint.bash; \
+		if ! grep -q .golangci-lint.bash $(HOME)/.bashrc; then \
+			echo "source \$$HOME/.golangci-lint.bash" >> $(HOME)/.bashrc; \
+		fi; \
+	fi
 
 .PHONY: install.go-junit-report
 install.go-junit-report:

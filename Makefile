@@ -27,6 +27,7 @@ ARCH_LIST = amd64 arm64
 NAME = gvm
 ROOT_PACKAGE=github.com/toodofun/gvm
 COVERAGE := 20
+GOLANG_CI_LINT_VERSION ?= 2.9.0
 SHELL := /bin/bash
 DOCKER := docker
 
@@ -54,6 +55,11 @@ OUTPUT_DIR := $(ROOT_DIR)/_output
 $(shell mkdir -p "$(OUTPUT_DIR)")
 endif
 
+ifeq ($(origin BIN_DIR),undefined)
+BIN_DIR := $(ROOT_DIR)/bin
+$(shell mkdir -p $(BIN_DIR))
+endif
+
 GO_LDFLAGS := $(shell $(GO) run "$(ROOT_DIR)/scripts/gen-ldflags.go")
 GO_BUILD_FLAGS = --ldflags "$(GO_LDFLAGS)"
 
@@ -67,9 +73,9 @@ include scripts/Makefile.tools.mk
 
 ## lint: Check syntax and styling of go sources.
 .PHONY: lint
-lint: tools.verify.golangci-lint
+lint: tools.verify.local.golangci-lint
 	@echo "===========> Run golangci to lint source codes"
-	@golangci-lint run -c "$(ROOT_DIR)/.golangci.yml" "$(ROOT_DIR)/..."
+	@$(BIN_DIR)/golangci-lint run -c $(ROOT_DIR)/.golangci.yml $(ROOT_DIR)/...
 
 ## test: Run unit test.
 .PHONY: test

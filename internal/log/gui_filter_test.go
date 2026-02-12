@@ -17,6 +17,7 @@ package log
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -29,7 +30,7 @@ type mockLogger struct {
 }
 
 func (m *mockLogger) Infof(format string, args ...interface{}) {
-	m.messages = append(m.messages, format)
+	m.messages = append(m.messages, fmt.Sprintf(format, args...))
 }
 
 func (m *mockLogger) Tracef(format string, args ...interface{}) {}

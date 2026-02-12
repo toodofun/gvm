@@ -40,6 +40,8 @@ const (
 	lang              = "rust"
 	githubReleasesURL = "https://api.github.com/repos/rust-lang/rust/releases"
 	downloadBaseURL   = "https://static.rust-lang.org/dist/"
+	preRelease        = "Pre-release"
+	stableRelease     = "Stable Release"
 )
 
 type Rust struct{}
@@ -92,9 +94,9 @@ func (r *Rust) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, e
 			continue
 		}
 
-		comment := "Stable Release"
+		comment := stableRelease
 		if release.Prerelease {
-			comment = "Pre-release"
+			comment = preRelease
 		}
 
 		res = append(res, &core.RemoteVersion{
@@ -164,19 +166,19 @@ func (r *Rust) Install(ctx context.Context, version *core.RemoteVersion) error {
 
 	// 映射 Go 的 GOOS/GOARCH 到 Rust 的命名
 	switch osName {
-	case "darwin":
-		osName = "apple-darwin"
-	case "linux":
-		osName = "unknown-linux-gnu"
-	case "windows":
-		osName = "pc-windows-msvc"
+	case env.RuntimeFromDarwin:
+		osName = env.RuntimeFromApple
+	case env.RuntimeFromLinux:
+		osName = env.RuntimeUnknown
+	case env.RuntimeFromWindows:
+		osName = env.RuntimeFromWindowsPC
 	}
 
 	switch archName {
-	case "amd64":
-		archName = "x86_64"
-	case "arm64":
-		archName = "aarch64"
+	case env.ArchAMD64:
+		archName = env.ArchX86And64
+	case env.ArchARM64:
+		archName = env.Aarch64
 	}
 
 	target := archName + "-" + osName
@@ -233,7 +235,7 @@ func (r *Rust) Install(ctx context.Context, version *core.RemoteVersion) error {
 
 	// 检查是否有安装脚本
 	installScript := filepath.Join(srcDir, "install.sh")
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == env.RuntimeFromWindows {
 		installScript = filepath.Join(srcDir, "install.bat")
 	}
 
@@ -241,7 +243,7 @@ func (r *Rust) Install(ctx context.Context, version *core.RemoteVersion) error {
 		logger.Infof("🔧 运行 Rust 安装脚本...")
 
 		var cmd string
-		if runtime.GOOS == "windows" {
+		if runtime.GOOS == env.RuntimeFromWindows {
 			cmd = fmt.Sprintf("cd \"%s\" && install.bat --prefix=\"%s\"", srcDir, installRoot)
 		} else {
 			cmd = fmt.Sprintf("cd \"%s\" && ./install.sh --prefix=\"%s\"", srcDir, installRoot)
@@ -271,7 +273,7 @@ func (r *Rust) runCommand(ctx context.Context, command string) error {
 	logger := log.GetLogger(ctx)
 
 	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == env.RuntimeFromWindows {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", command)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", command)

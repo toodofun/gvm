@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/toodofun/gvm/internal/core"
+	"github.com/toodofun/gvm/internal/util/env"
 
 	goversion "github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestRust_ListRemoteVersions(t *testing.T) {
 		if v.Origin == "" {
 			t.Error("version origin should not be empty")
 		}
-		if v.Comment != "Stable Release" && v.Comment != "Pre-release" {
+		if v.Comment != stableRelease && v.Comment != preRelease {
 			t.Errorf("unexpected comment: %s", v.Comment)
 		}
 	}
@@ -60,10 +61,10 @@ func TestRust_ListRemoteVersions(t *testing.T) {
 	hasPreRelease := false
 	hasStable := false
 	for _, v := range versions {
-		if v.Comment == "Pre-release" {
+		if v.Comment == preRelease {
 			hasPreRelease = true
 		}
-		if v.Comment == "Stable Release" {
+		if v.Comment == stableRelease {
 			hasStable = true
 		}
 	}
@@ -106,31 +107,31 @@ func TestRust_TargetMapping(t *testing.T) {
 	}{
 		{
 			name:         "macOS amd64",
-			goos:         "darwin",
-			goarch:       "amd64",
-			expectedOS:   "apple-darwin",
-			expectedArch: "x86_64",
+			goos:         env.RuntimeFromDarwin,
+			goarch:       env.ArchAMD64,
+			expectedOS:   env.RuntimeFromApple,
+			expectedArch: env.ArchX86And64,
 		},
 		{
 			name:         "macOS arm64",
-			goos:         "darwin",
-			goarch:       "arm64",
-			expectedOS:   "apple-darwin",
-			expectedArch: "aarch64",
+			goos:         env.RuntimeFromDarwin,
+			goarch:       env.ArchARM64,
+			expectedOS:   env.RuntimeFromApple,
+			expectedArch: env.Aarch64,
 		},
 		{
 			name:         "Linux amd64",
-			goos:         "linux",
-			goarch:       "amd64",
-			expectedOS:   "unknown-linux-gnu",
-			expectedArch: "x86_64",
+			goos:         env.RuntimeFromLinux,
+			goarch:       env.ArchAMD64,
+			expectedOS:   env.RuntimeUnknown,
+			expectedArch: env.ArchX86And64,
 		},
 		{
 			name:         "Windows amd64",
-			goos:         "windows",
-			goarch:       "amd64",
-			expectedOS:   "pc-windows-msvc",
-			expectedArch: "x86_64",
+			goos:         env.RuntimeFromWindows,
+			goarch:       env.ArchAMD64,
+			expectedOS:   env.RuntimeFromWindowsPC,
+			expectedArch: env.ArchX86And64,
 		},
 	}
 
@@ -141,19 +142,19 @@ func TestRust_TargetMapping(t *testing.T) {
 			archName := tt.goarch
 
 			switch osName {
-			case "darwin":
-				osName = "apple-darwin"
-			case "linux":
-				osName = "unknown-linux-gnu"
-			case "windows":
-				osName = "pc-windows-msvc"
+			case env.RuntimeFromDarwin:
+				osName = env.RuntimeFromApple
+			case env.RuntimeFromLinux:
+				osName = env.RuntimeUnknown
+			case env.RuntimeFromWindows:
+				osName = env.RuntimeFromWindowsPC
 			}
 
 			switch archName {
-			case "amd64":
-				archName = "x86_64"
-			case "arm64":
-				archName = "aarch64"
+			case env.ArchAMD64:
+				archName = env.ArchX86And64
+			case env.ArchARM64:
+				archName = env.Aarch64
 			}
 
 			assert.Equal(t, tt.expectedOS, osName)
@@ -201,7 +202,7 @@ func TestRust_Install_Integration(t *testing.T) {
 	remoteVersion := &core.RemoteVersion{
 		Version: ver,
 		Origin:  "1.75.0",
-		Comment: "Stable Release",
+		Comment: stableRelease,
 	}
 
 	// 注意：这个测试可能会因为网络问题失败，所以我们跳过实际安装
@@ -260,14 +261,14 @@ func TestRust_PlatformDetection(t *testing.T) {
 
 	// 确保支持的平台
 	supportedOS := map[string]bool{
-		"darwin":  true,
-		"linux":   true,
-		"windows": true,
+		env.RuntimeFromDarwin:  true,
+		env.RuntimeFromLinux:   true,
+		env.RuntimeFromWindows: true,
 	}
 
 	supportedArch := map[string]bool{
-		"amd64": true,
-		"arm64": true,
+		env.ArchAMD64: true,
+		env.ArchARM64: true,
 	}
 
 	if !supportedOS[osName] {
@@ -283,19 +284,19 @@ func TestRust_PlatformDetection(t *testing.T) {
 	mappedArch := archName
 
 	switch osName {
-	case "darwin":
-		mappedOS = "apple-darwin"
-	case "linux":
-		mappedOS = "unknown-linux-gnu"
-	case "windows":
-		mappedOS = "pc-windows-msvc"
+	case env.RuntimeFromDarwin:
+		mappedOS = env.RuntimeFromApple
+	case env.RuntimeFromLinux:
+		mappedOS = env.RuntimeUnknown
+	case env.RuntimeFromWindows:
+		mappedOS = env.RuntimeFromWindowsPC
 	}
 
 	switch archName {
-	case "amd64":
-		mappedArch = "x86_64"
-	case "arm64":
-		mappedArch = "aarch64"
+	case env.ArchAMD64:
+		mappedArch = env.ArchX86And64
+	case env.ArchARM64:
+		mappedArch = env.Aarch64
 	}
 
 	target := mappedArch + "-" + mappedOS

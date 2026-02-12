@@ -153,14 +153,14 @@ func (g *Golang) Install(ctx context.Context, version *core.RemoteVersion) error
 
 	// 检查版本是否存在
 	url := fmt.Sprintf("%s%s.%s-%s.tar.gz", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == env.RuntimeFromWindows {
 		url = fmt.Sprintf("%s%s.%s-%s.zip", baseUrl, version.Origin, runtime.GOOS, runtime.GOARCH)
 	}
 	head, code, err := http.Default().Head(ctx, url)
 	if err != nil {
 		return err
 	}
-	if runtime.GOOS == "darwin" && code == 404 {
+	if runtime.GOOS == env.RuntimeFromDarwin && code == 404 {
 		logger.Infof(
 			"Version %s not found for %s/%s, trying %s/amd64",
 			version.Version.String(),

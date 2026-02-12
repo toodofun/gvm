@@ -64,7 +64,7 @@ func (w *GUIFilterWriter) Write(p []byte) (int, error) {
 
 				// 相同类型的消息，如果在3秒内已经显示过，则跳过
 				if w.lastMessage != msgType || now.Sub(w.lastTime) > 3*time.Second {
-					w.logger.Infof(friendlyMsg)
+					w.logger.Infof("%s", friendlyMsg)
 					w.lastMessage = msgType
 					w.lastTime = now
 					w.messageCount[msgType]++

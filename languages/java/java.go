@@ -16,19 +16,12 @@ package java
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
-	"strings"
 
 	"github.com/toodofun/gvm/i18n"
-
-	goversion "github.com/hashicorp/go-version"
-
 	"github.com/toodofun/gvm/internal/core"
 	"github.com/toodofun/gvm/internal/http"
 	"github.com/toodofun/gvm/internal/log"
@@ -49,109 +42,6 @@ func (j *Java) Name() string {
 	return lang
 }
 
-func (j *Java) getCurrentSystemInfo() (os, arch, hwBitness string) {
-	switch strings.ToLower(runtime.GOOS) {
-	case "linux":
-		os = "linux"
-	case "windows":
-		os = "windows"
-	case "darwin":
-		os = "macos"
-	}
-
-	switch strings.ToLower(runtime.GOARCH) {
-	case "amd64":
-		arch = "x86"
-		hwBitness = "64"
-	case "arm64":
-		arch = "arm"
-		hwBitness = "64"
-		if runtime.GOOS == "darwin" {
-			arch = ""
-			hwBitness = ""
-		}
-	case "386":
-		arch = "x86"
-		hwBitness = "32"
-	case "arm":
-		arch = "arm"
-		hwBitness = "32"
-	}
-	return
-}
-
-func (j *Java) fetchRemote(
-	ctx context.Context,
-	page, size int,
-	callback func(version *core.RemoteVersion),
-) (more bool, err error) {
-	logger := log.GetLogger(ctx)
-	params := url.Values{}
-	params.Set("page", strconv.Itoa(page))
-	params.Set("page_size", strconv.Itoa(size))
-	params.Set("availability_types", "ca")
-	params.Set("release_status", "both")
-	params.Set(
-		"include_fields",
-		"java_package_features,release_status,support_term,os,arch,hw_bitness,abi,java_package_type,javafx_bundled,sha256_hash,cpu_gen,size,archive_type,certifications,lib_c_type,crac_supported",
-	)
-	params.Set("azul_com", "true")
-	params.Set("archive_type", "tar.gz")
-	params.Set("lib_c_type", "glibc")
-
-	osStr, arch, hwBitness := j.getCurrentSystemInfo()
-	params.Set("os", osStr)
-	if len(arch) > 0 {
-		params.Set("arch", arch)
-	}
-	if len(hwBitness) > 0 {
-		params.Set("hw_bitness", hwBitness)
-	}
-
-	targetUrl := zuluUrl + "?" + params.Encode()
-
-	logger.Infof("Fetching %s", targetUrl)
-	body, err := http.Default().Get(ctx, targetUrl)
-	if err != nil {
-		logger.Errorf("Failed to fetch %s: %s", targetUrl, err)
-		return false, err
-	}
-
-	versions := make([]Version, 0)
-	if err := json.Unmarshal(body, &versions); err != nil {
-		logger.Errorf("Failed to unmarshal %s: %s", targetUrl, err)
-		return false, err
-	}
-
-	for _, v := range versions {
-		if v.Os == "linux" && v.LibCType != "glibc" {
-			continue
-		}
-		if v.JavaPackageType != "jdk" {
-			continue
-		}
-		vs := make([]string, len(v.JavaVersion))
-		for i, num := range v.JavaVersion {
-			vs[i] = strconv.Itoa(num)
-		}
-
-		ver, err := goversion.NewVersion(strings.Join(vs, ".") + "-zulu-" + v.Sha256Hash[:4])
-		if err != nil {
-			logger.Errorf("Failed to parse version %s: %s", v.Name, err)
-			return false, err
-		}
-
-		comment := strings.ReplaceAll(v.Name, ".tar.gz", "")
-
-		callback(&core.RemoteVersion{
-			Version: ver,
-			Origin:  v.DownloadUrl,
-			Comment: comment,
-		})
-	}
-	return len(versions) == 1000, nil
-}
-
 func (j *Java) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, error) {
 	logger := log.GetLogger(ctx)
 	res := make([]*core.RemoteVersion, 0)
@@ -159,7 +49,7 @@ func (j *Java) ListRemoteVersions(ctx context.Context) ([]*core.RemoteVersion, e
 	page := 1
 	pageSize := 1000
 	for {
-		more, err := j.fetchRemote(ctx, page, pageSize, func(version *core.RemoteVersion) {
+		more, err := fetchRemote(ctx, page, pageSize, func(version *core.RemoteVersion) {
 			logger.Debugf("Fetching remote version %+v", version)
 			res = append(res, version)
 		})

@@ -22,6 +22,28 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 )
 
+const (
+	RuntimeFromWindows   = "windows"
+	RuntimeFromLinux     = "linux"
+	RuntimeFromDarwin    = "darwin"
+	RuntimeFromMacos     = "macos"
+	RuntimeFromApple     = "apple-darwin"
+	RuntimeUnknown       = "unknown-linux-gnu"
+	RuntimeFromWindowsPC = "pc-windows-msvc"
+	ArchAMD64            = "amd64"
+	ArchARM64            = "arm64"
+	Arch386              = "386"
+	ArchARM              = "arm"
+	ArchArmv7l           = "armv7l"
+	ArchX86              = "x86"
+	ArchX86And64         = "x86_64"
+	ArchX64              = "x64"
+	ArchARMGeneric       = "arm"
+	Aarch64              = "aarch64"
+	Bitness32            = "32"
+	Bitness64            = "64"
+)
+
 type IManager interface {
 	// AppendEnv 向环境变量中追加一个值
 	AppendEnv(key, value string) error
@@ -67,7 +89,7 @@ func (m *Manager) AppendEnv(key, value string) error {
 		valueList = []string{value}
 	}
 
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != RuntimeFromWindows {
 		valueList = append(valueList, "$"+key)
 	}
 
@@ -100,7 +122,7 @@ func (m *Manager) RemoveEnv(key, value string) error {
 		return m.DeleteEnv(key)
 	}
 
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != RuntimeFromWindows {
 		newValueList = append(newValueList, "$"+key)
 	}
 	// 去重
@@ -109,7 +131,7 @@ func (m *Manager) RemoveEnv(key, value string) error {
 }
 
 func (m *Manager) quoteValue(value string) string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == RuntimeFromWindows {
 		return value
 	}
 	// 如果值包含空格或特殊字符，需要加引号
