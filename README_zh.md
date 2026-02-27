@@ -125,9 +125,6 @@ make release
 ## 💕&nbsp;致谢
 感谢 [JetBrains](https://www.jetbrains.com/) 通过其开源许可计划支持本项目并提供出色的开发工具。
 
-## 🧠&nbsp;TODO
-- 本 CLI 工具仍处于开发阶段，大部分编程语言支持尚未完成，非常欢迎大家贡献代码 🙋‍♂️
-
 ## 🤝&nbsp;问题反馈
 
 如有问题，请在 [issue tracker](https://github.com/toodofun/gvm/issues) 提交。

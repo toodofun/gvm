@@ -123,9 +123,6 @@ make build
 ## 💕&nbsp;Acknowledgements
 Grateful acknowledgement to [JetBrains](https://www.jetbrains.com/) for supporting this project through their Open Source License Program and providing exceptional development tools.
 
-## 🧠&nbsp;TODOs
-- This cli tool is still in the development stage, and most of the programming languages are not completed. Everyone contribute is very much needed. 🙋‍♂️
-
 ## 🤝&nbsp;Issues
 
 If you have an issue: report it on the [issue tracker](https://github.com/toodofun/gvm/issues)
