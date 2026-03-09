@@ -3,7 +3,7 @@ module github.com/toodofun/gvm
 go 1.26.0
 
 require (
-	github.com/duke-git/lancet/v2 v2.3.8
+	github.com/duke-git/lancet/v2 v2.3.9
 	github.com/fatih/color v1.18.0
 	github.com/gdamore/tcell/v2 v2.13.8
 	github.com/google/uuid v1.6.0
