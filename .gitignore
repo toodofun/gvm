@@ -134,7 +134,7 @@ vendordiff.patch
 *.sqlite
 
 # swagger
-docs
+# docs directory removed from ignore - we want to track design documents
 
 # test coverage
 coverage.out
