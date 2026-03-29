@@ -51,10 +51,13 @@ func ValidatePath(path string) error {
 		return fmt.Errorf("path contains null byte")
 	}
 
-	// Check cleaned path for path traversal attempts
-	// Using filepath.Clean() normalizes the path and resolves ".." components
-	// If ".." still exists after cleaning, it indicates a real traversal attempt
+	// Check for path traversal attempts
+	// First, clean the path to normalize it and resolve ".." components
 	cleaned := filepath.Clean(path)
+
+	// If ".." still exists after cleaning, it indicates a real traversal attempt
+	// This is more accurate than checking the original path, as it allows
+	// valid relative paths like "foo/../bar" while blocking real traversal
 	if strings.Contains(cleaned, "..") {
 		return fmt.Errorf("path traversal detected")
 	}

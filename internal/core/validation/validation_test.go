@@ -48,7 +48,7 @@ func TestValidatePath(t *testing.T) {
 		{name: "valid relative path", path: "./go", wantErr: false},
 		{name: "valid home path", path: "~/go", wantErr: false},
 		{name: "empty path", path: "", wantErr: true, errMsg: "cannot be empty"},
-		{name: "path traversal attempt", path: "/etc/../passwd", wantErr: true, errMsg: "path traversal"},
+		{name: "valid path with .. that normalizes", path: "/etc/../passwd", wantErr: false},
 		{name: "path traversal with ..", path: "../../../etc/passwd", wantErr: true, errMsg: "path traversal"},
 		{name: "null bytes", path: "/etc/passwd\x00", wantErr: true, errMsg: "null byte"},
 		{name: "path too long", path: strings.Repeat("a", 4097), wantErr: true, errMsg: "too long"},

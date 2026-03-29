@@ -17,6 +17,7 @@ package env
 import (
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 // GetJavaEnvVars returns environment variables for Java
