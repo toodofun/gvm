@@ -15,7 +15,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/toodofun/gvm/cmd"
 	_ "github.com/toodofun/gvm/languages/github"
@@ -42,6 +44,15 @@ import (
 //}
 
 func main() {
+	// Add top-level panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Fprintf(os.Stderr, "Application panic: %v\n", r)
+			fmt.Fprintf(os.Stderr, "\nStack trace:\n%s\n", debug.Stack())
+			os.Exit(1)
+		}
+	}()
+
 	//initI18n()
 
 	root := cmd.NewRootCmd()

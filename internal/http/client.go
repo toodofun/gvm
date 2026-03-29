@@ -48,6 +48,11 @@ var (
 type Client struct {
 	resty *resty.Client
 	cache *cache.Cache
+
+	// Standard HTTP client for operations requiring direct control
+	httpClient *http.Client
+	timeout    time.Duration
+	maxRetries int
 }
 
 func Default() *Client {
@@ -57,9 +62,11 @@ func Default() *Client {
 				Timeout:   10 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   10,
+			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ResponseHeaderTimeout: 10 * time.Second,
-			IdleConnTimeout:       90 * time.Second,
 			Proxy:                 http.ProxyFromEnvironment, // 启用系统代理
 		}
 		c := resty.New().
@@ -71,10 +78,95 @@ func Default() *Client {
 		client = &Client{
 			resty: c,
 			cache: cache.New(defaultCacheTTL, defaultCacheTTL*2),
+			httpClient: &http.Client{
+				Timeout:   30 * time.Second,
+				Transport: transport,
+			},
+			timeout:    30 * time.Second,
+			maxRetries: 3,
 		}
 	})
 
 	return client
+}
+
+// NewClient creates a new HTTP client with specified timeout and retry settings
+func NewClient(timeout time.Duration, maxRetries int) *Client {
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          100,
+		MaxIdleConnsPerHost:   10,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: timeout,
+		Proxy:                 http.ProxyFromEnvironment,
+		DisableKeepAlives:     false,
+		MaxConnsPerHost:       10,
+	}
+
+	return &Client{
+		resty: resty.New().
+			SetTransport(transport).
+			SetRetryCount(maxRetries).
+			SetRetryWaitTime(2 * time.Second).
+			SetRetryMaxWaitTime(10 * time.Second),
+		cache:      cache.New(defaultCacheTTL, defaultCacheTTL*2),
+		httpClient: &http.Client{Timeout: timeout, Transport: transport},
+		timeout:    timeout,
+		maxRetries: maxRetries,
+	}
+}
+
+// Do executes HTTP request with proper resource cleanup
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+	// Add timeout context
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	req = req.WithContext(ctx)
+
+	var resp *http.Response
+	var err error
+
+	// Retry logic
+	for i := 0; i <= c.maxRetries; i++ {
+		resp, err = c.httpClient.Do(req)
+		if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			// Success
+			break
+		}
+
+		// Close response body before retry
+		if resp != nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}
+
+		// Check if we should retry
+		if i < c.maxRetries {
+			// Retry on network errors or specific HTTP status codes
+			if err != nil && isTemporaryError(err) {
+				time.Sleep(time.Duration(i+1) * time.Second)
+				continue
+			}
+			// Retry on specific HTTP status codes
+			if resp != nil && isRetryableStatusCode(resp.StatusCode) {
+				time.Sleep(time.Duration(i+1) * time.Second)
+				continue
+			}
+		}
+
+		// No more retries or non-retryable error
+		if err != nil {
+			return nil, fmt.Errorf("HTTP request failed after %d retries: %w", c.maxRetries, err)
+		}
+		return nil, fmt.Errorf("HTTP request failed with status %d", resp.StatusCode)
+	}
+
+	return resp, nil
 }
 
 func (c *Client) makeCacheKey(rawURL string) (string, error) {
@@ -267,4 +359,65 @@ func (c *Client) Download(ctx context.Context, url, destPath, filename string) (
 	}
 
 	return file, nil
+}
+
+// DownloadToFile downloads content to file with proper resource cleanup
+func (c *Client) DownloadToFile(ctx context.Context, url, destPath string) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := c.Do(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// Ensure body is closed before function returns
+		if resp != nil && resp.Body != nil {
+			io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}
+	}()
+
+	// Create destination file
+	file, err := os.Create(destPath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	// Copy data
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		os.Remove(destPath)
+		return fmt.Errorf("failed to download file: %w", err)
+	}
+
+	return nil
+}
+
+// isTemporaryError checks if error is temporary
+func isTemporaryError(err error) bool {
+	if netErr, ok := err.(interface{ Temporary() bool }); ok {
+		return netErr.Temporary()
+	}
+	if _, ok := err.(interface{ Timeout() bool }); ok {
+		return true
+	}
+	return false
+}
+
+// isRetryableStatusCode checks if HTTP status code is retryable
+func isRetryableStatusCode(statusCode int) bool {
+	switch statusCode {
+	case http.StatusServiceUnavailable, // 503
+		http.StatusTooManyRequests, // 429
+		http.StatusGatewayTimeout,  // 504
+		http.StatusBadGateway:      // 502
+		return true
+	default:
+		return false
+	}
 }
