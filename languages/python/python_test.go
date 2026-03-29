@@ -35,6 +35,9 @@ func TestPython_Name(t *testing.T) {
 }
 
 func TestPython_ListRemoteVersions(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping network-dependent test in short mode")
+	}
 	p := &Python{}
 	versions, err := p.ListRemoteVersions(context.Background())
 	if err != nil {
@@ -67,6 +70,9 @@ func TestPython_ListInstalledVersions(t *testing.T) {
 }
 
 func TestPython_GetDefaultVersion(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping network-dependent test in short mode")
+	}
 	p := &Python{}
 	version := p.GetDefaultVersion(context.Background())
 	if version == nil {
@@ -120,6 +126,9 @@ func TestPython_Uninstall(t *testing.T) {
 }
 
 func TestPython_Install_ValidPath(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping network-dependent test in short mode")
+	}
 	p := &Python{}
 	// 模拟有效路径
 	originalGetRootDir := core.GetRootDir
@@ -192,6 +201,9 @@ func TestPython_checkAvailableVersions(t *testing.T) {
 }
 
 func TestPython_ListRemoteVersions_Enhanced(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping network-dependent test in short mode")
+	}
 	p := &Python{}
 	ctx := context.Background()
 
@@ -301,6 +313,9 @@ func TestPython_Install_VersionFormat(t *testing.T) {
 }
 
 func TestPython_PreReleaseError_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping network-dependent test in short mode")
+	}
 	p := &Python{}
 	ctx := context.Background()
 

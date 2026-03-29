@@ -16,8 +16,8 @@ var dangerousChars = []string{
 	"|", "&", ";", "$", "(", ")", "<", ">", "`", "\\",
 	"\n", "\r", "\x00", // CRITICAL: control characters
 	"{", "}", "[", "]", // shell expansions
-	"!", "#", "~",      // shell features
-	"\"", "'",           // quotes
+	"!", "#", "~", // shell features
+	"\"", "'", // quotes
 }
 
 // ParseCommand safely parses a command string, rejecting shell metacharacters

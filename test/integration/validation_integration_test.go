@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/toodofun/gvm/internal/core/validation"
 )
 
@@ -106,11 +107,11 @@ func TestValidationLayerIntegration(t *testing.T) {
 		// Test dangerous URLs
 		dangerousURLs := []string{
 			"",
-			"http://example.com",              // Not HTTPS
-			"ftp://example.com",               // Wrong scheme
-			"https://localhost:8080",          // Localhost
-			"https://127.0.0.1",               // Loopback
-			"https://192.168.1.1",             // Private IP
+			"http://example.com",     // Not HTTPS
+			"ftp://example.com",      // Wrong scheme
+			"https://localhost:8080", // Localhost
+			"https://127.0.0.1",      // Loopback
+			"https://192.168.1.1",    // Private IP
 			"not-a-url",
 			"javascript:alert('xss')",
 		}
@@ -124,11 +125,11 @@ func TestValidationLayerIntegration(t *testing.T) {
 	t.Run("CombinedValidationScenarios", func(t *testing.T) {
 		// Simulate real-world validation scenarios
 		scenarios := []struct {
-			name     string
-			version  string
-			path     string
-			url      string
-			wantErr  bool
+			name    string
+			version string
+			path    string
+			url     string
+			wantErr bool
 		}{
 			{
 				name:    "Valid Go installation",

@@ -413,9 +413,9 @@ func isTemporaryError(err error) bool {
 func isRetryableStatusCode(statusCode int) bool {
 	switch statusCode {
 	case http.StatusServiceUnavailable, // 503
-		http.StatusTooManyRequests,      // 429
-		http.StatusGatewayTimeout,       // 504
-		http.StatusBadGateway:           // 502
+		http.StatusTooManyRequests, // 429
+		http.StatusGatewayTimeout,  // 504
+		http.StatusBadGateway:      // 502
 		return true
 	default:
 		return false

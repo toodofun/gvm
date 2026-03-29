@@ -25,6 +25,10 @@ import (
 	gvmpath "github.com/toodofun/gvm/internal/util/path"
 )
 
+const (
+	windowsOS = "windows"
+)
+
 // mock root dir for testing
 func setupTestRoot(t *testing.T) string {
 	t.Helper()
@@ -98,7 +102,7 @@ func TestGetInstalledVersion_BinExists(t *testing.T) {
 }
 
 func TestSetSymlink_CreateAndOverwrite(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windowsOS {
 		t.Skip("symlink test skipped on Windows")
 	}
 	dir := t.TempDir()
@@ -120,7 +124,7 @@ func TestSetSymlink_CreateAndOverwrite(t *testing.T) {
 }
 
 func TestSetSymlink_TargetExistsButNotSymlink(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windowsOS {
 		t.Skip("symlink test skipped on Windows")
 	}
 	dir := t.TempDir()
@@ -222,14 +226,14 @@ func TestIsPathSafe(t *testing.T) {
 }
 
 func TestCheckSymlinkSafety(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windowsOS {
 		t.Skip("symlink test skipped on Windows")
 	}
 
 	tests := []struct {
-		name       string
-		setup      func(baseDir string) (linkPath string)
-		wantErr    bool
+		name        string
+		setup       func(baseDir string) (linkPath string)
+		wantErr     bool
 		errContains string
 	}{
 		{
@@ -253,7 +257,7 @@ func TestCheckSymlinkSafety(t *testing.T) {
 				_ = os.Symlink(target, link)
 				return link
 			},
-			wantErr:    true,
+			wantErr:     true,
 			errContains: "symlink target escapes base path",
 		},
 		{
@@ -263,7 +267,7 @@ func TestCheckSymlinkSafety(t *testing.T) {
 				_ = os.Symlink("../outside.txt", link)
 				return link
 			},
-			wantErr:    true,
+			wantErr:     true,
 			errContains: "symlink target escapes base path",
 		},
 		{
@@ -273,7 +277,7 @@ func TestCheckSymlinkSafety(t *testing.T) {
 				_ = os.Symlink("/etc/passwd", link)
 				return link
 			},
-			wantErr:    true,
+			wantErr:     true,
 			errContains: "symlink target escapes base path",
 		},
 		{
@@ -295,7 +299,7 @@ func TestCheckSymlinkSafety(t *testing.T) {
 				_ = os.Symlink("subdir/../../../etc/passwd", link)
 				return link
 			},
-			wantErr:    true,
+			wantErr:     true,
 			errContains: "symlink target escapes base path",
 		},
 	}
@@ -323,7 +327,7 @@ func TestCheckSymlinkSafety(t *testing.T) {
 }
 
 func TestIsPathSafe_SymlinkWithinBase(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windowsOS {
 		t.Skip("symlink test skipped on Windows")
 	}
 
@@ -344,7 +348,7 @@ func TestIsPathSafe_SymlinkWithinBase(t *testing.T) {
 }
 
 func TestIsPathSafe_SymlinkEscape(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == windowsOS {
 		t.Skip("symlink test skipped on Windows")
 	}
 

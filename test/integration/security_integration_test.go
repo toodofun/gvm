@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/toodofun/gvm/internal/util/exec"
 	"github.com/toodofun/gvm/internal/util/path"
 )

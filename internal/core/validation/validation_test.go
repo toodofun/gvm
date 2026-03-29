@@ -81,7 +81,12 @@ func TestValidateURL(t *testing.T) {
 		{name: "empty URL", url: "", wantErr: true, errMsg: "cannot be empty"},
 		{name: "HTTP not HTTPS", url: "http://example.com/file.tar.gz", wantErr: true, errMsg: "must use HTTPS"},
 		{name: "invalid URL format", url: "not-a-url", wantErr: true, errMsg: "invalid URL"},
-		{name: "URL too long", url: "https://example.com/" + strings.Repeat("a", 2048), wantErr: true, errMsg: "too long"},
+		{
+			name:    "URL too long",
+			url:     "https://example.com/" + strings.Repeat("a", 2048),
+			wantErr: true,
+			errMsg:  "too long",
+		},
 		{name: "localhost URL", url: "https://localhost/file.tar.gz", wantErr: true, errMsg: "localhost"},
 		{name: "127.0.0.1 URL", url: "https://127.0.0.1/file.tar.gz", wantErr: true, errMsg: "localhost"},
 		{name: "private IP URL", url: "https://192.168.1.1/file.tar.gz", wantErr: true, errMsg: "private IP"},
