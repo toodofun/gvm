@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/toodofun/gvm/internal/core"
@@ -217,5 +218,149 @@ func TestIsPathSafe(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCheckSymlinkSafety(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink test skipped on Windows")
+	}
+
+	tests := []struct {
+		name       string
+		setup      func(baseDir string) (linkPath string)
+		wantErr    bool
+		errContains string
+	}{
+		{
+			name: "safe symlink within base",
+			setup: func(baseDir string) string {
+				target := filepath.Join(baseDir, "safe-target.txt")
+				link := filepath.Join(baseDir, "safe-link")
+				_ = os.WriteFile(target, []byte("safe"), 0644)
+				_ = os.Symlink(target, link)
+				return link
+			},
+			wantErr: false,
+		},
+		{
+			name: "symlink to parent directory escape",
+			setup: func(baseDir string) string {
+				parentDir := filepath.Dir(baseDir)
+				target := filepath.Join(parentDir, "escape.txt")
+				link := filepath.Join(baseDir, "escape-link")
+				_ = os.WriteFile(target, []byte("escaped"), 0644)
+				_ = os.Symlink(target, link)
+				return link
+			},
+			wantErr:    true,
+			errContains: "symlink target escapes base path",
+		},
+		{
+			name: "relative symlink with .. escape",
+			setup: func(baseDir string) string {
+				link := filepath.Join(baseDir, "relative-escape-link")
+				_ = os.Symlink("../outside.txt", link)
+				return link
+			},
+			wantErr:    true,
+			errContains: "symlink target escapes base path",
+		},
+		{
+			name: "absolute symlink to system path",
+			setup: func(baseDir string) string {
+				link := filepath.Join(baseDir, "absolute-escape-link")
+				_ = os.Symlink("/etc/passwd", link)
+				return link
+			},
+			wantErr:    true,
+			errContains: "symlink target escapes base path",
+		},
+		{
+			name: "safe relative symlink within base",
+			setup: func(baseDir string) string {
+				target := filepath.Join(baseDir, "subdir", "file.txt")
+				link := filepath.Join(baseDir, "safe-relative-link")
+				_ = os.MkdirAll(filepath.Join(baseDir, "subdir"), 0755)
+				_ = os.WriteFile(target, []byte("safe"), 0644)
+				_ = os.Symlink("subdir/file.txt", link)
+				return link
+			},
+			wantErr: false,
+		},
+		{
+			name: "complex relative symlink escape",
+			setup: func(baseDir string) string {
+				link := filepath.Join(baseDir, "complex-escape-link")
+				_ = os.Symlink("subdir/../../../etc/passwd", link)
+				return link
+			},
+			wantErr:    true,
+			errContains: "symlink target escapes base path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			baseDir := t.TempDir()
+			linkPath := tt.setup(baseDir)
+
+			err := gvmpath.CheckSymlinkSafety(baseDir, linkPath)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error containing %q, got nil", tt.errContains)
+				} else if tt.errContains != "" && !strings.Contains(err.Error(), tt.errContains) {
+					t.Errorf("expected error containing %q, got %q", tt.errContains, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestIsPathSafe_SymlinkWithinBase(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink test skipped on Windows")
+	}
+
+	baseDir := t.TempDir()
+	targetFile := filepath.Join(baseDir, "target.txt")
+	linkPath := filepath.Join(baseDir, "link")
+
+	_ = os.WriteFile(targetFile, []byte("content"), 0644)
+	_ = os.Symlink(targetFile, linkPath)
+
+	safe, err := gvmpath.IsPathSafe(baseDir, "link")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !safe {
+		t.Errorf("expected symlink within base to be safe")
+	}
+}
+
+func TestIsPathSafe_SymlinkEscape(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink test skipped on Windows")
+	}
+
+	baseDir := t.TempDir()
+	parentDir := filepath.Dir(baseDir)
+	escapeTarget := filepath.Join(parentDir, "escape.txt")
+	linkPath := filepath.Join(baseDir, "escape-link")
+
+	_ = os.WriteFile(escapeTarget, []byte("escaped"), 0644)
+	_ = os.Symlink(escapeTarget, linkPath)
+
+	safe, err := gvmpath.IsPathSafe(baseDir, "escape-link")
+	if err == nil {
+		t.Errorf("expected error for escaping symlink, got nil")
+	}
+	if safe {
+		t.Errorf("expected escaping symlink to be unsafe")
 	}
 }

@@ -98,6 +98,16 @@ func IsPathSafe(basePath, targetPath string) (bool, error) {
 
 	// Build full target path
 	fullTarget := filepath.Join(basePath, targetPath)
+
+	// Check if the path is a symlink before resolving
+	info, err := os.Lstat(fullTarget)
+	if err == nil && info.Mode()&os.ModeSymlink != 0 {
+		// Path is a symlink, check if it's safe
+		if err := CheckSymlinkSafety(basePath, fullTarget); err != nil {
+			return false, err
+		}
+	}
+
 	absTarget, err := filepath.Abs(fullTarget)
 	if err != nil {
 		return false, fmt.Errorf("failed to resolve target path: %w", err)
@@ -115,4 +125,47 @@ func IsPathSafe(basePath, targetPath string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// CheckSymlinkSafety verifies that a symlink does not escape the base directory
+func CheckSymlinkSafety(basePath, linkPath string) error {
+	// Read symlink target
+	target, err := os.Readlink(linkPath)
+	if err != nil {
+		return fmt.Errorf("failed to read symlink %s: %w", linkPath, err)
+	}
+
+	// Resolve symlink target to absolute path
+	var absTarget string
+	if filepath.IsAbs(target) {
+		// Absolute symlink
+		absTarget = target
+	} else {
+		// Relative symlink - resolve relative to the directory containing the symlink
+		linkDir := filepath.Dir(linkPath)
+		absTarget = filepath.Join(linkDir, target)
+	}
+
+	// Clean the absolute target path
+	absTarget = filepath.Clean(absTarget)
+
+	// Get absolute base path
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve base path: %w", err)
+	}
+	absBase = filepath.Clean(absBase)
+
+	// Check if symlink target is within base path
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return fmt.Errorf("failed to compute relative path from base to symlink target: %w", err)
+	}
+
+	// If relative path starts with .., symlink escapes base path
+	if strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("symlink target escapes base path: %s -> %s", linkPath, target)
+	}
+
+	return nil
 }
