@@ -133,6 +133,11 @@ vendordiff.patch
 *.db
 *.sqlite
 
+# backup files
+*.bak
+*.backup
+*.old
+
 # swagger
 # docs directory removed from ignore - we want to track design documents
 
@@ -143,5 +148,7 @@ config-dev.yaml
 
 /tmp
 gvm
-bin# Ignore docs directory - local design documents only
+bin
+
+# Ignore docs directory - local design documents only
 docs/

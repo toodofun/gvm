@@ -79,7 +79,10 @@ var GetRootDir = func() string {
 		// If all else fails, return temp directory as last resort
 		if tmpDir := os.TempDir(); tmpDir != "" {
 			path := filepath.Join(tmpDir, defaultDir)
-			_ = ensureDir(path)
+			if err := ensureDir(path); err != nil {
+				// If creating the temp dir fails, we are out of options. Return the original fallback.
+				return fallback
+			}
 			return path
 		}
 	}

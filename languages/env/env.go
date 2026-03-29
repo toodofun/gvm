@@ -33,9 +33,15 @@ func GetJavaEnvVars(installPath string) map[string]string {
 // P0: PYTHONHOME (critical - was commented out)
 // P1: PYTHONPATH, PYTHONDONTWRITEBYTECODE, PYTHONUNBUFFERED, PYTHONIOENCODING
 func GetPythonEnvVars(installPath string) map[string]string {
-	// Extract version from path for PYTHONPATH
+	// Extract version from path for PYTHONPATH, e.g. /path/to/3.11.0 -> 3.11
 	// Default to python3 if we can't determine version
-	libPath := filepath.Join(installPath, "lib", "python3.11", "site-packages")
+	version := filepath.Base(installPath)
+	parts := strings.Split(version, ".")
+	majorMinor := "python3" // A sensible fallback
+	if len(parts) >= 2 {
+		majorMinor = "python" + parts[0] + "." + parts[1]
+	}
+	libPath := filepath.Join(installPath, "lib", majorMinor, "site-packages")
 
 	return map[string]string{
 		"PYTHONHOME":              installPath,

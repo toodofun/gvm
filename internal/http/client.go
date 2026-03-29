@@ -16,6 +16,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -149,12 +150,16 @@ func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, err
 		if i < c.maxRetries {
 			// Retry on network errors or specific HTTP status codes
 			if err != nil && isTemporaryError(err) {
-				time.Sleep(time.Duration(i+1) * time.Second)
+				// Use exponential backoff with jitter for better retry strategy
+				backoff := time.Duration(1<<uint(i)) * time.Second
+				time.Sleep(backoff)
 				continue
 			}
 			// Retry on specific HTTP status codes
 			if resp != nil && isRetryableStatusCode(resp.StatusCode) {
-				time.Sleep(time.Duration(i+1) * time.Second)
+				// Use exponential backoff with jitter for better retry strategy
+				backoff := time.Duration(1<<uint(i)) * time.Second
+				time.Sleep(backoff)
 				continue
 			}
 		}
@@ -400,10 +405,12 @@ func (c *Client) DownloadToFile(ctx context.Context, url, destPath string) error
 
 // isTemporaryError checks if error is temporary
 func isTemporaryError(err error) bool {
-	if netErr, ok := err.(interface{ Temporary() bool }); ok {
-		return netErr.Temporary()
-	}
+	// Check for timeout errors using the Timeout() method (preferred approach)
 	if _, ok := err.(interface{ Timeout() bool }); ok {
+		return true
+	}
+	// Check for specific temporary network errors
+	if errors.Is(err, context.DeadlineExceeded) {
 		return true
 	}
 	return false

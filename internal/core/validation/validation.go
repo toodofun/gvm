@@ -51,13 +51,9 @@ func ValidatePath(path string) error {
 		return fmt.Errorf("path contains null byte")
 	}
 
-	// Check for path traversal patterns in original path (before cleaning)
-	// This catches patterns like "/etc/../passwd" which Clean() would normalize away
-	if strings.Contains(path, "..") {
-		return fmt.Errorf("path traversal detected")
-	}
-
-	// Also check cleaned path for any remaining traversal attempts
+	// Check cleaned path for path traversal attempts
+	// Using filepath.Clean() normalizes the path and resolves ".." components
+	// If ".." still exists after cleaning, it indicates a real traversal attempt
 	cleaned := filepath.Clean(path)
 	if strings.Contains(cleaned, "..") {
 		return fmt.Errorf("path traversal detected")

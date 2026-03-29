@@ -93,8 +93,8 @@ test: tools.verify.go-junit-report
 .PHONY: test-coverage
 test-coverage:
 	@echo "===========> Running tests with coverage"
-	@$(GO) test -v -race -coverprofile=coverage.out -covermode=atomic ./...
-	@$(GO) tool cover -html=coverage.out -o coverage.html
+	@$(GO) test -v -race -coverprofile=$(OUTPUT_DIR)/coverage.out -covermode=atomic ./...
+	@$(GO) tool cover -html=$(OUTPUT_DIR)/coverage.out -o $(OUTPUT_DIR)/coverage.html
 
 ## test-race: Run tests with race detector.
 .PHONY: test-race
