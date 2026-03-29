@@ -12,7 +12,13 @@ type Command struct {
 }
 
 // dangerousChars contains all dangerous shell metacharacters
-var dangerousChars = []string{"|", "&", ";", "$", "(", ")", "<", ">", "`", "\\"}
+var dangerousChars = []string{
+	"|", "&", ";", "$", "(", ")", "<", ">", "`", "\\",
+	"\n", "\r", "\x00", // CRITICAL: control characters
+	"{", "}", "[", "]", // shell expansions
+	"!", "#", "~",      // shell features
+	"\"", "'",           // quotes
+}
 
 // ParseCommand safely parses a command string, rejecting shell metacharacters
 // This is a critical security function - it prevents command injection attacks

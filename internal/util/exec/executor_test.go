@@ -186,3 +186,50 @@ func TestSafeExecutor_Execute_RejectsDangerousArguments(t *testing.T) {
 		})
 	}
 }
+
+func TestParseCommand_RejectsNewlineInjection(t *testing.T) {
+	tests := []struct {
+		name    string
+		cmd     string
+		wantErr bool
+	}{
+		{
+			name:    "newline injection",
+			cmd:     "ls\nrm -rf /",
+			wantErr: true,
+		},
+		{
+			name:    "carriage return injection",
+			cmd:     "ls\r\ncat /etc/passwd",
+			wantErr: true,
+		},
+		{
+			name:    "null byte",
+			cmd:     "ls\x00rm -rf /",
+			wantErr: true,
+		},
+		{
+			name:    "brace expansion",
+			cmd:     "touch {a,b}.txt",
+			wantErr: true,
+		},
+		{
+			name:    "quote bypass attempt",
+			cmd:     "ls'\"rm -rf /",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, err := ParseCommand(tt.cmd)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, cmd)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, cmd)
+			}
+		})
+	}
+}

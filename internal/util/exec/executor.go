@@ -26,6 +26,13 @@ func NewSafeExecutor(allowedCommands []string) *SafeExecutor {
 
 // Execute safely executes a command
 func (e *SafeExecutor) Execute(ctx context.Context, cmd string, args ...string) error {
+	// NEW: Validate command name doesn't contain dangerous characters
+	for _, dangerousChar := range dangerousChars {
+		if strings.Contains(cmd, dangerousChar) {
+			return fmt.Errorf("command contains dangerous character '%s'", dangerousChar)
+		}
+	}
+
 	// Check if command is in whitelist
 	if !e.allowedCommands[cmd] {
 		return fmt.Errorf("command not allowed: %s", cmd)
