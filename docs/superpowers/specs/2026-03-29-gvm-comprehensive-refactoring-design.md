@@ -11,13 +11,25 @@
 
 按优先级从高到低进行重构:
 
-1. **核心安全模块** (core/security) - 新建,集中处理所有安全相关功能
-2. **核心配置模块** (core/config) - 修复panic,改进错误处理
-3. **核心注册表模块** (core/registry) - 添加并发安全
-4. **HTTP客户端模块** (http/client) - 修复资源泄漏,改进缓存
-5. **工具模块** (util/) - 按子模块重构: compress, path, match等
+1. **核心安全模块** (internal/core/security) - 新建,集中处理所有安全相关功能
+2. **核心配置模块** (internal/core/config) - 修复panic,改进错误处理
+3. **核心注册表模块** (internal/core/registry) - 添加并发安全
+4. **HTTP客户端模块** (internal/http/client) - 修复资源泄漏,改进缓存
+5. **工具模块** (internal/util/) - 按子模块重构: compress, path, match, exec等
 6. **语言实现模块** (languages/) - 每个语言独立重构: golang, nodejs, python, java, rust
 7. **命令行模块** (cmd/) - 最后重构,依赖前面所有模块
+
+### 1.1.1 公共API定义
+
+**向后兼容性保证** - 以下接口必须保持稳定:
+
+- `internal/core/interface.go` 中的 `Language` 接口
+- `languages/*` 包的公开函数 (Install, Uninstall, List, Use, 等)
+- CLI命令行接口 (cmd/)
+
+**内部实现可变更**:
+- 所有 `internal/*` 包的内部实现
+- 具体的数据结构和算法
 
 ### 1.2 重构原则
 
@@ -81,6 +93,29 @@
 - go test -cover ≥80%
 - golangci-lint 无错误
 
+**覆盖率豁免:**
+对于难以测试的代码,可以申请覆盖率豁免:
+- CLI命令和UI组件(需要终端交互)
+- 平台特定代码(如Windows特定的功能)
+- 错误处理路径中的panic恢复
+
+豁免需要:
+- 文档说明为什么难以测试
+- 提供手动测试步骤
+- 代码审查批准
+
+示例:
+```go
+// +build !integration
+
+// 这个测试需要真实的终端环境,在CI中跳过
+// 手动测试: 运行 gvm install python 3.9.7
+// 预期: 显示下载进度条
+func TestCLI_ProgressBar(t *testing.T) {
+    t.Skip("requires terminal, run manually")
+}
+```
+
 ## 3. 安全漏洞修复方案
 
 ### 3.1 命令注入漏洞修复
@@ -99,32 +134,169 @@ cmd = exec.CommandContext(ctx, "sh", "-c", cmdInfo.cmd)
 
 ```go
 // 安全的命令执行接口
+package exec
+
+import (
+    "context"
+    "fmt"
+    "os/exec"
+    "strings"
+)
+
+// SafeExecutor 提供安全的命令执行,防止命令注入攻击
 type SafeExecutor struct {
+    // allowedCommands 是白名单,只允许执行预定义的命令
     allowedCommands map[string]bool
-    allowedArgs     []string
 }
 
+// Command 表示一个已解析的命令
+type Command struct {
+    Name string
+    Args []string
+}
+
+// ParseCommand 安全地解析命令字符串,拒绝shell元字符
+// 这是一个关键安全函数 - 它防止命令注入攻击
+func ParseCommand(cmdString string) (*Command, error) {
+    // 检查危险字符
+    dangerousChars := []string{"|", "&", ";", "$", "(", ")", "<", ">", "`", "\\",}
+    for _, char := range dangerousChars {
+        if strings.Contains(cmdString, char) {
+            return nil, fmt.Errorf("command contains dangerous character: %s", char)
+        }
+    }
+
+    parts := strings.Fields(cmdString)
+    if len(parts) == 0 {
+        return nil, fmt.Errorf("empty command")
+    }
+
+    return &Command{
+        Name: parts[0],
+        Args: parts[1:],
+    }, nil
+}
+
+// NewSafeExecutor 创建一个安全执行器,只允许白名单中的命令
+func NewSafeExecutor(allowedCommands []string) *SafeExecutor {
+    whitelist := make(map[string]bool)
+    for _, cmd := range allowedCommands {
+        whitelist[cmd] = true
+    }
+    return &SafeExecutor{
+        allowedCommands: whitelist,
+    }
+}
+
+// Execute 安全地执行命令
 func (e *SafeExecutor) Execute(ctx context.Context, cmd string, args ...string) error {
+    // 检查命令是否在白名单中
     if !e.allowedCommands[cmd] {
         return fmt.Errorf("command not allowed: %s", cmd)
     }
-    // 参数验证
-    // ...
+
+    // 验证参数中不包含shell元字符
+    for _, arg := range args {
+        if strings.ContainsAny(arg, "|&;<>()$`\\"/*|*/) {
+            return fmt.Errorf("argument contains dangerous characters: %s", arg)
+        }
+    }
+
+    // 使用参数化执行,不通过shell
     execCmd := exec.CommandContext(ctx, cmd, args...)
     return execCmd.Run()
+}
+
+// ExecuteString 从字符串解析并执行命令
+func (e *SafeExecutor) ExecuteString(ctx context.Context, cmdString string) error {
+    cmd, err := ParseCommand(cmdString)
+    if err != nil {
+        return err
+    }
+
+    return e.Execute(ctx, cmd.Name, cmd.Args...)
 }
 ```
 
 **测试用例:**
 ```go
 func TestSafeExecutor_RejectsCommandInjection(t *testing.T) {
-    executor := NewSafeExecutor(map[string]bool{"ls": true})
+    allowedCmds := []string{"ls", "tar", "rm"}
+    executor := NewSafeExecutor(allowedCmds)
 
-    // 尝试命令注入
-    err := executor.Execute(context.Background(), "sh", "-c", "rm -rf /")
+    tests := []struct {
+        name    string
+        cmd     string
+        args    []string
+        wantErr bool
+        errContains string
+    }{
+        {
+            name:    "normal command",
+            cmd:     "ls",
+            args:    []string{"-la"},
+            wantErr: false,
+        },
+        {
+            name:    "command not in whitelist",
+            cmd:     "sh",
+            args:    []string{"-c", "rm -rf /"},
+            wantErr: true,
+            errContains: "not allowed",
+        },
+        {
+            name:    "argument with pipe",
+            cmd:     "ls",
+            args:    []string{"|", "rm", "-rf", "/"},
+            wantErr: true,
+            errContains: "dangerous",
+        },
+        {
+            name:    "argument with command substitution",
+            cmd:     "ls",
+            args:    []string{"$(rm -rf /)"},
+            wantErr: true,
+            errContains: "dangerous",
+        },
+    }
 
-    assert.Error(t, err)
-    assert.Contains(t, err.Error(), "not allowed")
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := executor.Execute(context.Background(), tt.cmd, tt.args...)
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errContains)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+
+func TestParseCommand_RejectsShellMetacharacters(t *testing.T) {
+    tests := []struct {
+        name    string
+        cmd     string
+        wantErr bool
+    }{
+        {"normal", "ls -la", false},
+        {"pipe", "ls | rm -rf /", true},
+        {"command sub", "ls $(rm -rf /)", true},
+        {"semicolon", "ls; rm -rf /", true},
+        {"backtick", "ls `rm -rf /`", true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            cmd, err := ParseCommand(tt.cmd)
+            if tt.wantErr {
+                assert.Error(t, err)
+            } else {
+                assert.NoError(t, err)
+                assert.NotEmpty(t, cmd.Name)
+            }
+        })
+    }
 }
 ```
 
@@ -264,7 +436,213 @@ func main() {
 }
 ```
 
-### 3.5 输入验证层
+### 3.5 HTTP客户端资源泄漏修复
+
+**问题位置:** `internal/http/client.go:104` - response body可能未正确关闭
+
+**当前问题代码:**
+```go
+resp, err := c.client.Do(req)
+if err != nil {
+    return nil, err
+}
+defer resp.Body.Close()
+
+// 如果后续代码panic,defer会执行,但可能有其他问题
+// ...
+```
+
+**修复方案:**
+```go
+// internal/http/client.go
+package http
+
+import (
+    "context"
+    "fmt"
+    "io"
+    "net/http"
+    "time"
+)
+
+type Client struct {
+    client      *http.Client
+    timeout     time.Duration
+    maxRetries  int
+}
+
+// NewClient 创建一个新的HTTP客户端
+func NewClient(timeout time.Duration, maxRetries int) *Client {
+    return &Client{
+        client: &http.Client{
+            Timeout: timeout,
+            Transport: &http.Transport{
+                MaxIdleConns:        100,
+                MaxIdleConnsPerHost: 10,
+                IdleConnTimeout:     90 * time.Second,
+            },
+        },
+        timeout:    timeout,
+        maxRetries: maxRetries,
+    }
+}
+
+// Do 执行HTTP请求,确保资源正确清理
+func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
+    // 添加超时上下文
+    ctx, cancel := context.WithTimeout(ctx, c.timeout)
+    defer cancel() // 确保context被取消
+
+    req = req.WithContext(ctx)
+
+    var resp *http.Response
+    var err error
+
+    // 重试逻辑
+    for i := 0; i <= c.maxRetries; i++ {
+        resp, err = c.client.Do(req)
+        if err == nil {
+            break
+        }
+
+        // 如果是临时错误,重试
+        if i < c.maxRetries && isTemporaryError(err) {
+            time.Sleep(time.Duration(i+1) * time.Second)
+            continue
+        }
+
+        // 最后一次重试失败,返回错误
+        return nil, fmt.Errorf("HTTP request failed after %d retries: %w", c.maxRetries, err)
+    }
+
+    // 检查响应状态码
+    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+        // 确保在返回错误前关闭body
+        resp.Body.Close()
+        return nil, fmt.Errorf("HTTP request failed with status %d", resp.StatusCode)
+    }
+
+    return resp, nil
+}
+
+// DownloadToFile 下载内容到文件,确保资源正确清理
+func (c *Client) DownloadToFile(ctx context.Context, url, destPath string) error {
+    req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+    if err != nil {
+        return fmt.Errorf("failed to create request: %w", err)
+    }
+
+    resp, err := c.Do(ctx, req)
+    if err != nil {
+        return err
+    }
+    // 不在这里defer关闭body,因为要传递给调用者
+
+    defer func() {
+        // 确保body在函数返回前被关闭
+        if resp != nil && resp.Body != nil {
+            io.Copy(io.Discard, resp.Body) // 消耗剩余body
+            resp.Body.Close()
+        }
+    }()
+
+    // 创建目标文件
+    file, err := os.Create(destPath)
+    if err != nil {
+        return fmt.Errorf("failed to create file: %w", err)
+    }
+    defer file.Close()
+
+    // 使用TeeProgressReader跟踪下载进度
+    progress := &ProgressReader{
+        Reader: resp.Body,
+        Total:  resp.ContentLength,
+    }
+
+    // 复制数据
+    _, err = io.Copy(file, progress)
+    if err != nil {
+        // 删除不完整的文件
+        os.Remove(destPath)
+        return fmt.Errorf("failed to download file: %w", err)
+    }
+
+    return nil
+}
+
+// isTemporaryError 检查错误是否是临时的
+func isTemporaryError(err error) bool {
+    if netErr, ok := err.(interface{ Temporary() bool }); ok {
+        return netErr.Temporary()
+    }
+    return false
+}
+
+// ProgressReader 跟踪下载进度
+type ProgressReader struct {
+    Reader    io.Reader
+    Total     int64
+    ReadBytes int64
+}
+
+func (pr *ProgressReader) Read(p []byte) (int, error) {
+    n, err := pr.Reader.Read(p)
+    pr.ReadBytes += int64(n)
+
+    // 可以在这里触发进度回调
+    // pr.onProgress(pr.ReadBytes, pr.Total)
+
+    return n, err
+}
+```
+
+**测试用例:**
+```go
+func TestClient_ResourceCleanup(t *testing.T) {
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("response body"))
+    }))
+    defer server.Close()
+
+    client := NewClient(5*time.Second, 2)
+    req, _ := http.NewRequest("GET", server.URL, nil)
+
+    resp, err := client.Do(context.Background(), req)
+    assert.NoError(t, err)
+    assert.NotNil(t, resp)
+    defer resp.Body.Close()
+
+    // 验证body可以正常读取
+    data, err := io.ReadAll(resp.Body)
+    assert.NoError(t, err)
+    assert.Equal(t, "response body", string(data))
+}
+
+func TestClient_RetryOnTemporaryError(t *testing.T) {
+    attempts := 0
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        attempts++
+        if attempts < 3 {
+            w.WriteHeader(http.StatusServiceUnavailable)
+            return
+        }
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("success"))
+    }))
+    defer server.Close()
+
+    client := NewClient(5*time.Second, 3)
+    req, _ := http.NewRequest("GET", server.URL, nil)
+
+    resp, err := client.Do(context.Background(), req)
+    assert.NoError(t, err)
+    assert.Equal(t, 3, attempts)
+    defer resp.Body.Close()
+}
+```
+
+### 3.6 输入验证层
 
 新建 `core/validation.go`:
 ```go
@@ -406,8 +784,14 @@ if err := os.Mkdir(dir, 0755); err != nil {
 ```
 
 **语言一致性:**
-- 所有错误信息统一使用中文或英文(需要决定)
-- 建议使用英文以获得更好的国际化支持
+- 所有错误信息统一使用英文
+- 这确保了更好的国际化支持和全球贡献者协作
+- 示例: `"failed to download version"` 而不是 `"下载版本失败"`
+
+**迁移策略:**
+- 现有中文错误信息逐步替换为英文
+- 在注释中保留中文说明以帮助中文开发者理解
+- CLI输出可以后续添加国际化(i18n)支持
 
 ### 4.3 配置管理改进
 
@@ -622,7 +1006,198 @@ if len(versions) == 1000 { ... }
 if len(versions) == MaxVersionsPerPage { ... }
 ```
 
-## 5. 性能优化与文档改进
+## 5. 外部依赖与性能基准
+
+### 5.1 外部工具依赖
+
+**必需的工具:**
+
+| 工具 | 用途 | 版本要求 | 降级策略 |
+|------|------|----------|----------|
+| tar | 解压.tar.gz文件 | 任何现代版本 | 使用Go内置archive/tar |
+| gzip | 解压缩 | 任何现代版本 | 使用Go内置compress/gzip |
+| xz | 解压.tar.xz文件 (部分语言) | 5.0+ | 使用Go内置compress/xz |
+| unzip | 解压.zip文件 (部分语言) | 6.0+ | 使用Go内置archive/zip |
+| git | 克隆仓库 (可选) | 2.0+ | 跳过git相关功能 |
+
+**平台特定工具:**
+
+**macOS:**
+- xar: 解压.pkg文件 (Python macOS安装包)
+- pax: 便携式归档交换
+
+**Linux:**
+- 通常不需要额外工具,tar/gzip已包含在所有发行版中
+
+**Windows:**
+- 推荐使用WSL或Git Bash
+- 原生Windows支持: 计划中
+
+**工具检测和降级:**
+```go
+// internal/util/dependency/checker.go
+package dependency
+
+type ToolChecker struct {
+    available map[string]bool
+}
+
+func NewToolChecker() *ToolChecker {
+    checker := &ToolChecker{
+        available: make(map[string]bool),
+    }
+    checker.checkAll()
+    return checker
+}
+
+func (c *ToolChecker) checkAll() {
+    tools := []string{"tar", "gzip", "unzip", "xz"}
+    for _, tool := range tools {
+        _, err := exec.LookPath(tool)
+        c.available[tool] = (err == nil)
+    }
+}
+
+func (c *ToolChecker) IsAvailable(tool string) bool {
+    available, ok := c.available[tool]
+    return ok && available
+}
+
+func (c *ToolChecker) RequireOrFallback(tool string, fallback func() error) error {
+    if !c.IsAvailable(tool) {
+        log.Warnf("Tool %s not found, using fallback", tool)
+        return fallback()
+    }
+    return nil
+}
+```
+
+### 5.2 性能基准测试
+
+**建立基准:**
+在开始优化之前,建立性能基准线:
+
+```bash
+# 运行所有基准测试
+go test -bench=. -benchmem ./...
+
+# 保存基准结果
+go test -bench=. -benchmem ./... > baseline.txt
+
+# 比较后续优化
+go test -bench=. -benchmem ./... > optimized.txt
+benchcmp baseline.txt optimized.txt
+```
+
+**关键基准指标:**
+
+1. **启动时间**
+   ```go
+   // BenchmarkStartup 测试gvm启动时间
+   func BenchmarkStartup(b *testing.B) {
+       for i := 0; i < b.N; i++ {
+           cmd := exec.Command("gvm", "version")
+           if err := cmd.Run(); err != nil {
+               b.Fatal(err)
+           }
+       }
+   }
+   ```
+
+2. **版本列表查询**
+   ```go
+   // BenchmarkListVersions 测试版本列表查询性能
+   func BenchmarkListVersions(b *testing.B) {
+       python := NewPython(config)
+       b.ResetTimer()
+       for i := 0; i < b.N; i++ {
+           versions, err := python.List(context.Background())
+           if err != nil {
+               b.Fatal(err)
+           }
+           _ = versions
+       }
+   }
+   ```
+
+3. **下载性能**
+   ```go
+   // BenchmarkDownload 测试下载性能
+   func BenchmarkDownload(b *testing.B) {
+       client := NewClient(30*time.Second, 3)
+       b.ResetTimer()
+       for i := 0; i < b.N; i++ {
+           // 使用测试服务器
+           _, err := client.DownloadToFile(context.Background(),
+               "http://test-server/file.tar.gz",
+               "/tmp/test.tar.gz")
+           if err != nil {
+               b.Fatal(err)
+           }
+           os.Remove("/tmp/test.tar.gz")
+       }
+   }
+   ```
+
+4. **并发查询性能**
+   ```go
+   // BenchmarkConcurrentList 测试并发版本查询
+   func BenchmarkConcurrentList(b *testing.B) {
+       python := NewPython(config)
+       b.RunParallel(func(pb *testing.PB) {
+           for pb.Next() {
+               versions, err := python.List(context.Background())
+               if err != nil {
+                   b.Fatal(err)
+               }
+               _ = versions
+           }
+       })
+   }
+   ```
+
+**性能目标:**
+
+| 指标 | 当前 | 目标 | 测量方法 |
+|------|------|------|----------|
+| 启动时间 | ~2s | <1s | time gvm version |
+| 版本列表 | ~5s | <2s | time gvm list python |
+| 并发查询 | 顺序 | 10x加速 | benchmark对比 |
+| 内存使用 | ~50MB | <100MB | /usr/bin/time -v |
+
+**持续性能监控:**
+```yaml
+# .github/workflows/benchmark.yml
+name: Benchmark
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v4
+      with:
+        go-version: '1.26'
+
+    - name: Run benchmarks
+      run: |
+        go test -bench=. -benchmem ./... > benchmark.txt
+
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'go'
+        output-file-path: benchmark.txt
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
+```
+
+## 6. 性能优化与文档改进
 
 ### 5.1 性能优化
 
@@ -680,6 +1255,8 @@ type Cache struct {
 type cacheEntry struct {
     value      interface{}
     expiration time.Time
+    etag       string // 用于HTTP缓存验证
+    lastModified time.Time // 用于缓存失效判断
 }
 
 func NewCache(ttl time.Duration) *Cache {
@@ -714,32 +1291,175 @@ func (c *Cache) Set(key string, value interface{}) {
     c.data[key] = &cacheEntry{
         value:      value,
         expiration: time.Now().Add(c.ttl),
+        lastModified: time.Now(),
     }
 }
 
-// 使用缓存
-type CachedVersionLister struct {
-    cache  *cache.Cache
-    lister VersionLister
-}
+// SetWithHeaders 从HTTP响应头设置缓存,支持ETag和Last-Modified
+func (c *Cache) SetWithHeaders(key string, value interface{}, etag, lastModified string) {
+    c.mu.Lock()
+    defer c.mu.Unlock()
 
-func (c *CachedVersionLister) List(ctx context.Context) ([]string, error) {
-    // 尝试从缓存获取
-    if val, ok := c.cache.Get("versions"); ok {
-        return val.([]string), nil
+    entry := &cacheEntry{
+        value:      value,
+        expiration: time.Now().Add(c.ttl),
+        etag:       etag,
     }
 
-    // 缓存未命中,从源获取
-    versions, err := c.lister.List(ctx)
+    if lastModified != "" {
+        if lm, err := time.Parse(http.TimeFormat, lastModified); err == nil {
+            entry.lastModified = lm
+        }
+    }
+
+    c.data[key] = entry
+}
+
+// ShouldRevalidate 检查缓存是否需要重新验证
+func (c *Cache) ShouldRevalidate(key string) bool {
+    c.mu.RLock()
+    defer c.mu.RUnlock()
+
+    entry, ok := c.data[key]
+    if !ok {
+        return true // 没有缓存,需要获取
+    }
+
+    // 如果已经过期,需要重新验证
+    if time.Now().After(entry.expiration) {
+        return true
+    }
+
+    return false
+}
+
+// GetValidationHeaders 获取用于条件请求的验证头
+func (c *Cache) GetValidationHeaders(key string) (etag, lastModified string) {
+    c.mu.RLock()
+    defer c.mu.RUnlock()
+
+    entry, ok := c.data[key]
+    if !ok {
+        return "", ""
+    }
+
+    return entry.etag, entry.lastModified.Format(http.TimeFormat)
+}
+
+// cleanupLoop 定期清理过期条目
+func (c *Cache) cleanupLoop() {
+    ticker := time.NewTicker(5 * time.Minute)
+    defer ticker.Stop()
+
+    for range ticker.C {
+        c.mu.Lock()
+        now := time.Now()
+        for key, entry := range c.data {
+            if now.After(entry.expiration) {
+                delete(c.data, key)
+            }
+        }
+        c.mu.Unlock()
+    }
+}
+
+// 使用缓存的HTTP客户端,支持条件请求
+type CachedHTTPClient struct {
+    cache  *Cache
+    client *http.Client
+}
+
+func (c *CachedHTTPClient) Get(ctx context.Context, url string) ([]byte, error) {
+    cacheKey := "http:" + url
+
+    // 检查是否需要重新验证
+    if !c.cache.ShouldRevalidate(cacheKey) {
+        if val, ok := c.cache.Get(cacheKey); ok {
+            return val.([]byte), nil
+        }
+    }
+
+    // 创建请求,添加条件头
+    req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
     if err != nil {
         return nil, err
     }
 
-    // 存入缓存
-    c.cache.Set("versions", versions)
-    return versions, nil
+    etag, lastModified := c.cache.GetValidationHeaders(cacheKey)
+    if etag != "" {
+        req.Header.Set("If-None-Match", etag)
+    }
+    if lastModified != "" {
+        req.Header.Set("If-Modified-Since", lastModified)
+    }
+
+    resp, err := c.client.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+
+    // 304 Not Modified - 使用缓存
+    if resp.StatusCode == http.StatusNotModified {
+        if val, ok := c.cache.Get(cacheKey); ok {
+            return val.([]byte), nil
+        }
+    }
+
+    // 正常响应
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+    }
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, err
+    }
+
+    // 更新缓存
+    etag = resp.Header.Get("ETag")
+    lastModified = resp.Header.Get("Last-Modified")
+    c.cache.SetWithHeaders(cacheKey, body, etag, lastModified)
+
+    return body, nil
 }
 ```
+
+**缓存失效策略:**
+
+1. **基于时间的失效**
+   - 默认TTL: 24小时
+   - 可配置: `GVM_CACHE_TTL` 环境变量
+
+2. **基于HTTP头的失效**
+   - ETag: 资源标识符
+   - Last-Modified: 最后修改时间
+   - 使用条件请求(If-None-Match, If-Modified-Since)
+
+3. **手动失效**
+   ```go
+   // gvm cache clear --all
+   // gvm cache clear python
+   func (c *Cache) Clear(key string) {
+       c.mu.Lock()
+       defer c.mu.Unlock()
+       delete(c.data, key)
+   }
+   ```
+
+4. **智能预取**
+   ```go
+   // 在后台预取即将过期的缓存
+   func (c *CachedHTTPClient) Prefetch(ctx context.Context, url string) error {
+       if c.cache.ShouldRevalidate("http:" + url) {
+           go func() {
+               // 异步刷新缓存
+               c.Get(context.Background(), url)
+           }()
+       }
+       return nil
+   }
+   ```
 
 **字符串操作优化**
 
@@ -1021,7 +1741,7 @@ jobs:
 
     strategy:
       matrix:
-        go-version: [1.21, 1.22]
+        go-version: [1.26]  # 使用go.mod中要求的版本
 
     steps:
     - uses: actions/checkout@v3
@@ -1049,7 +1769,97 @@ jobs:
       uses: codecov/codecov-action@v3
 ```
 
-## 6. 实施计划
+## 6. 迁移与兼容性
+
+### 6.1 用户数据兼容性
+
+**保证:**
+- 已安装的语言版本完全保留
+- 用户配置文件自动迁移
+- 环境变量设置保持兼容
+
+**迁移步骤:**
+
+1. **配置文件迁移**
+   ```go
+   // 自动检测旧配置并迁移
+   func migrateConfig(oldConfig, newConfig string) error {
+       if _, err := os.Stat(oldConfig); err == nil {
+           // 旧配置存在,执行迁移
+           data, _ := os.ReadFile(oldConfig)
+           // 转换为新格式
+           if err := os.WriteFile(newConfig, data, 0644); err != nil {
+               return err
+           }
+           // 备份旧配置
+           os.Rename(oldConfig, oldConfig+".backup")
+       }
+       return nil
+   }
+   ```
+
+2. **已安装版本保留**
+   - 所有已安装版本保留在原位置
+   - 重新初始化注册表以识别现有版本
+   - 无需重新下载
+
+3. **环境变量兼容**
+   ```bash
+   # 现有环境变量继续工作
+   export GVM_ROOT=/path/to/gvm
+   export PATH=$GVM_ROOT/bin:$PATH
+   ```
+
+### 6.2 API兼容性
+
+**公共API保持不变:**
+- CLI命令名称和参数
+- Language接口方法签名
+- 环境变量名称
+
+**内部实现可变更:**
+- 数据结构
+- 算法实现
+- 内部函数签名
+
+### 6.3 测试迁移
+
+```go
+// internal/migration/migration_test.go
+package migration_test
+
+func TestMigration_PreservesUserData(t *testing.T) {
+    // 创建临时测试环境
+    tempDir := t.TempDir()
+
+    // 模拟旧版本安装
+    oldVersionPath := filepath.Join(tempDir, "versions", "go", "1.20.0")
+    os.MkdirAll(oldVersionPath, 0755)
+
+    // 执行迁移
+    err := migration.Migrate(tempDir)
+    assert.NoError(t, err)
+
+    // 验证数据保留
+    _, err = os.Stat(oldVersionPath)
+    assert.NoError(t, err, "existing version should be preserved")
+}
+```
+
+### 6.4 回滚计划
+
+如果迁移失败:
+1. 保留原目录的完整备份
+2. 提供回滚脚本
+3. 详细的错误日志用于诊断
+
+### 6.5 迁移时间线
+
+- **阶段1**: 准备迁移工具和测试
+- **阶段2-6**: 每个阶段完成后,验证迁移
+- **阶段7**: 完整的迁移测试和文档
+
+## 7. 实施计划
 
 ### 6.1 阶段划分
 
