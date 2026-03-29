@@ -1,0 +1,50 @@
+name: Lint
+
+on:
+  push:
+    branches: ["master", "main", "develop", "feat/*"]
+  pull_request:
+    branches: ["master", "main", "develop"]
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go: ["1.26"]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.9.0
+          args: --timeout=10m
+
+      - name: Check gofmt
+        run: |
+          UNFORMATTED=$(gofmt -l .)
+          if [ -n "$UNFORMATTED" ]; then
+            echo "The following files are not formatted:"
+            echo "$UNFORMATTED"
+            exit 1
+          fi
+
+      - name: Check go.mod consistency
+        run: |
+          go mod tidy
+          if [ -n "$(git diff go.mod go.sum)" ]; then
+            echo "go.mod or go.sum is not consistent. Run 'go mod tidy'"
+            exit 1
+          fi

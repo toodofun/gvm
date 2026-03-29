@@ -89,6 +89,19 @@ test: tools.verify.go-junit-report
 	@$(GO) tool cover -html="$(OUTPUT_DIR)/coverage.out" -o "$(OUTPUT_DIR)/coverage.html"
 	@$(GO) tool cover -func="$(OUTPUT_DIR)/coverage.out"
 
+## test-coverage: Run tests and generate coverage report.
+.PHONY: test-coverage
+test-coverage:
+	@echo "===========> Running tests with coverage"
+	@$(GO) test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+	@$(GO) tool cover -html=coverage.out -o coverage.html
+
+## test-race: Run tests with race detector.
+.PHONY: test-race
+test-race:
+	@echo "===========> Running tests with race detector"
+	@$(GO) test -race -short ./...
+
 ## cover: Run unit test and get test coverage.
 .PHONY: cover
 cover: test
@@ -164,6 +177,29 @@ check-updates: tools.verify.go-mod-outdated
 clean: ## Remove building artifacts
 	@echo "===========> Cleaning all build output"
 	rm -rf $(OUTPUT_DIR)/*
+
+## security: Run security scanning tools.
+.PHONY: security
+security:
+	@echo "===========> Running security scans"
+	@command -v gosec >/dev/null 2>&1 || go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@gosec ./...
+	@command -v govulncheck >/dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
+	@govulncheck ./...
+
+## benchmark: Run benchmarks.
+.PHONY: benchmark
+benchmark:
+	@echo "===========> Running benchmarks"
+	@$(GO) test -bench=. -benchmem -run=^$$ ./...
+
+## dev-tools: Install development tools.
+.PHONY: dev-tools
+dev-tools:
+	@echo "===========> Installing development tools"
+	@command -v golangci-lint >/dev/null 2>&1 || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.9.0
+	@command -v gosec >/dev/null 2>&1 || go install github.com/securego/gosec/v2/cmd/gosec@latest
+	@command -v govulncheck >/dev/null 2>&1 || go install golang.org/x/vuln/cmd/govulncheck@latest
 
 ## tidy: Clean up go.mod and go.sum by removing unused dependencies and adding missing ones
 .PHONY: tidy
