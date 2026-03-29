@@ -1,0 +1,1888 @@
+# GVM改进 - 第一阶段实施计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**目标:** 搭建测试框架基础设施，实现核心安全模块，为后续重构奠定坚实基础
+
+**架构:**
+- 创建独立的测试框架和工具模块
+- 实现安全命令执行器（防止命令注入）
+- 实现路径验证工具（防止路径遍历）
+- 实现输入验证层
+- 配置CI/CD流水线
+
+**技术栈:**
+- Go 1.26+
+- testify (测试框架)
+- golangci-lint (代码检查)
+- GitHub Actions (CI/CD)
+- go test -race (竞态检测)
+
+---
+
+## 文件结构
+
+```
+gvm/
+├── internal/
+│   ├── core/
+│   │   └── validation/           # NEW: 输入验证层
+│   │       ├── validation.go     # 验证函数
+│   │       └── validation_test.go
+│   └── util/
+│       ├── exec/                 # NEW: 安全命令执行
+│       │   ├── executor.go       # 安全执行器实现
+│       │   └── executor_test.go
+│       └── path/                 # MODIFY: 增强路径验证
+│           ├── path.go           # 现有文件，增强
+│           └── path_test.go      # 现有文件，增强测试
+├── test/
+│   ├── framework/                # NEW: 测试框架
+│   │   ├── setup.go              # 测试设置工具
+│   │   ├── fixtures.go           # 测试固件
+│   │   └── helpers.go            # 测试辅助函数
+│   └── mock/                     # NEW: Mock实现
+│       └── http_mock.go          # HTTP测试服务器
+├── .github/
+│   └── workflows/
+│       ├── test.yml              # NEW: 测试工作流
+│       ├── lint.yml              # NEW: 代码检查工作流
+│       └── security.yml          # NEW: 安全扫描工作流
+├── Makefile                       # MODIFY: 添加新目标
+├── go.mod                         # MODIFY: 添加测试依赖
+└── docs/
+    └── testing/
+        ├── test-framework.md      # NEW: 测试框架文档
+        └── tdd-workflow.md       # NEW: TDD流程文档
+```
+
+---
+
+## 任务列表
+
+### Task 1: 设置测试框架基础设施
+
+**目标:** 创建测试辅助工具和框架，为所有后续测试提供支持
+
+**Files:**
+- Create: `test/framework/setup.go`
+- Create: `test/framework/fixtures.go`
+- Create: `test/framework/helpers.go`
+- Modify: `go.mod`
+
+- [ ] **Step 1: 创建测试框架目录结构**
+
+```bash
+mkdir -p test/framework
+mkdir -p test/mock
+```
+
+- [ ] **Step 2: 添加测试依赖到go.mod**
+
+```bash
+go get github.com/stretchr/testify/assert
+go get github.com/stretchr/testify/mock
+go get github.com/stretchr/testify/suite
+```
+
+- [ ] **Step 3: 创建test/framework/setup.go - 测试环境设置工具**
+
+```go
+package framework
+
+import (
+    "io/ioutil"
+    "os"
+    "path/filepath"
+    "testing"
+)
+
+// SetupTestEnvironment 创建临时测试环境
+// 返回临时目录路径和清理函数
+func SetupTestEnvironment(t *testing.T) (string, func()) {
+    t.Helper()
+
+    tempDir, err := ioutil.TempDir("", "gvm-test-*")
+    if err != nil {
+        t.Fatalf("failed to create temp dir: %v", err)
+    }
+
+    cleanup := func() {
+        os.RemoveAll(tempDir)
+    }
+
+    return tempDir, cleanup
+}
+
+// SetupTestConfig 创建测试配置目录结构
+func SetupTestConfig(t *testing.T, baseDir string) {
+    t.Helper()
+
+    dirs := []string{
+        filepath.Join(baseDir, "versions"),
+        filepath.Join(baseDir, "archives"),
+        filepath.Join(baseDir, "config"),
+    }
+
+    for _, dir := range dirs {
+        if err := os.MkdirAll(dir, 0755); err != nil {
+            t.Fatalf("failed to create directory %s: %v", dir, err)
+        }
+    }
+}
+
+// CreateTestFile 在测试目录中创建文件
+func CreateTestFile(t *testing.T, path, content string) {
+    t.Helper()
+
+    dir := filepath.Dir(path)
+    if err := os.MkdirAll(dir, 0755); err != nil {
+        t.Fatalf("failed to create directory: %v", err)
+    }
+
+    if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
+        t.Fatalf("failed to write file: %v", err)
+    }
+}
+```
+
+- [ ] **Step 4: 创建test/framework/fixtures.go - 测试固件**
+
+```go
+package framework
+
+import (
+    "compress/gzip"
+    "io"
+    "os"
+    "path/filepath"
+)
+
+// CreateTarGzFixture 创建测试用的tar.gz文件
+func CreateTarGzFixture(destPath string, files map[string]string) error {
+    // 创建临时目录
+    tempDir, err := os.MkdirTemp("", "fixture-*")
+    if err != nil {
+        return err
+    }
+    defer os.RemoveAll(tempDir)
+
+    // 创建文件
+    for name, content := range files {
+        filePath := filepath.Join(tempDir, name)
+        if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+            return err
+        }
+        if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+            return err
+        }
+    }
+
+    // TODO: 创建tar.gz文件
+    // 这个函数将在compress模块测试中完成
+
+    return nil
+}
+
+// CreateGzipFixture 创建测试用的gzip文件
+func CreateGzipFixture(destPath, content string) error {
+    file, err := os.Create(destPath)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    gw := gzip.NewWriter(file)
+    defer gw.Close()
+
+    _, err = gw.Write([]byte(content))
+    return err
+}
+
+// HTTPTestServer HTTP测试服务器的配置
+type HTTPTestServer struct {
+    BaseURL    string
+    Responses  map[string]string
+    StatusCode map[string]int
+}
+
+// NewHTTPTestServer 创建新的测试HTTP服务器配置
+// 注意: 实际的测试服务器应该在各个测试中使用httptest.NewServer创建
+func NewHTTPTestServer() *HTTPTestServer {
+    return &HTTPTestServer{
+        Responses:  make(map[string]string),
+        StatusCode: make(map[string]int),
+    }
+}
+```
+
+- [ ] **Step 5: 创建test/framework/helpers.go - 测试辅助函数**
+
+```go
+package framework
+
+import (
+    "os"
+    "path/filepath"
+    "testing"
+)
+
+// AssertDirExists 断言目录存在
+func AssertDirExists(t *testing.T, path string) {
+    t.Helper()
+
+    info, err := os.Stat(path)
+    if err != nil {
+        t.Fatalf("directory %s does not exist: %v", path, err)
+    }
+
+    if !info.IsDir() {
+        t.Fatalf("%s is not a directory", path)
+    }
+}
+
+// AssertFileExists 断言文件存在
+func AssertFileExists(t *testing.T, path string) {
+    t.Helper()
+
+    info, err := os.Stat(path)
+    if err != nil {
+        t.Fatalf("file %s does not exist: %v", path, err)
+    }
+
+    if info.IsDir() {
+        t.Fatalf("%s is a directory, not a file", path)
+    }
+}
+
+// AssertFileContains 断言文件包含特定内容
+func AssertFileContains(t *testing.T, path, content string) {
+    t.Helper()
+
+    data, err := os.ReadFile(path)
+    if err != nil {
+        t.Fatalf("failed to read file %s: %v", path, err)
+    }
+
+    contentStr := string(data)
+    if !contains(contentStr, content) {
+        t.Fatalf("file %s does not contain expected content:\ngot: %s\nwant: %s",
+            path, contentStr, content)
+    }
+}
+
+// Contains 辅助函数：检查字符串是否包含子串
+func contains(s, substr string) bool {
+    return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (
+        s[:len(substr)] == substr ||
+        s[len(s)-len(substr):] == substr ||
+        containsInMiddle(s, substr)))
+}
+
+func containsInMiddle(s, substr string) bool {
+    for i := 1; i < len(s)-len(substr)+1; i++ {
+        if s[i:i+len(substr)] == substr {
+            return true
+        }
+    }
+    return false
+}
+
+// SkipIfShort 跳过短测试
+func SkipIfShort(t *testing.T) {
+    t.Helper()
+    if testing.Short() {
+        t.Skip("skipping test in short mode")
+    }
+}
+```
+
+- [ ] **Step 6: 为test/framework创建测试文件**
+
+```bash
+# 测试框架本身也需要测试
+touch test/framework/setup_test.go
+touch test/framework/fixtures_test.go
+touch test/framework/helpers_test.go
+```
+
+- [ ] **Step 7: 运行测试确保框架代码正常工作**
+
+```bash
+go test ./test/framework/... -v
+```
+
+预期输出: 所有测试通过
+
+- [ ] **Step 8: 提交测试框架**
+
+```bash
+git add test/
+git commit -m "feat: add testing framework infrastructure
+
+- Add test environment setup utilities
+- Add test fixtures and helpers
+- Provide reusable test utilities for all modules
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 2: 实现安全命令执行器
+
+**目标:** 创建安全的命令执行器，防止命令注入攻击
+
+**Files:**
+- Create: `internal/util/exec/executor.go`
+- Create: `internal/util/exec/executor_test.go`
+- Create: `internal/util/exec/exec.go`
+
+- [ ] **Step 1: 创建exec包目录**
+
+```bash
+mkdir -p internal/util/exec
+```
+
+- [ ] **Step 2: 编写失败测试 - 测试危险字符检测**
+
+```go
+// internal/util/exec/executor_test.go
+package exec
+
+import (
+    "context"
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestParseCommand_RejectsShellMetacharacters(t *testing.T) {
+    tests := []struct {
+        name    string
+        cmd     string
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:    "normal command",
+            cmd:     "ls -la",
+            wantErr: false,
+        },
+        {
+            name:    "pipe character",
+            cmd:     "ls | rm -rf /",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "command substitution",
+            cmd:     "ls $(rm -rf /)",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "semicolon",
+            cmd:     "ls; rm -rf /",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "backtick",
+            cmd:     "ls `rm -rf /`",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "ampersand",
+            cmd:     "ls & rm",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "dollar sign",
+            cmd:     "ls $HOME",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "parentheses",
+            cmd:     "ls (rm)",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "redirect",
+            cmd:     "ls > file",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+        {
+            name:    "backslash",
+            cmd:     "ls \\",
+            wantErr: true,
+            errMsg:  "dangerous character",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            cmd, err := ParseCommand(tt.cmd)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errMsg)
+                assert.Nil(t, cmd)
+            } else {
+                assert.NoError(t, err)
+                assert.NotNil(t, cmd)
+                assert.NotEmpty(t, cmd.Name)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 3: 运行测试确认失败**
+
+```bash
+go test ./internal/util/exec/... -v
+```
+
+预期输出:
+```
+# undefined: ParseCommand
+```
+
+- [ ] **Step 4: 实现ParseCommand函数**
+
+```go
+// internal/util/exec/exec.go
+package exec
+
+import (
+    "fmt"
+    "strings"
+)
+
+// Command 表示一个已解析的安全命令
+type Command struct {
+    Name string
+    Args []string
+}
+
+// dangerousChars 包含所有危险shell元字符
+var dangerousChars = []string{"|", "&", ";", "$", "(", ")", "<", ">", "`", "\\"}
+
+// ParseCommand 安全地解析命令字符串，拒绝shell元字符
+// 这是一个关键安全函数 - 它防止命令注入攻击
+func ParseCommand(cmdString string) (*Command, error) {
+    // 检查危险字符
+    for _, char := range dangerousChars {
+        if strings.Contains(cmdString, char) {
+            return nil, fmt.Errorf("command contains dangerous character: %s", char)
+        }
+    }
+
+    // 分割命令和参数
+    parts := strings.Fields(cmdString)
+    if len(parts) == 0 {
+        return nil, fmt.Errorf("empty command")
+    }
+
+    return &Command{
+        Name: parts[0],
+        Args: parts[1:],
+    }, nil
+}
+```
+
+- [ ] **Step 5: 运行测试确认通过**
+
+```bash
+go test ./internal/util/exec/... -v
+```
+
+预期输出: 所有测试通过 ✓
+
+- [ ] **Step 6: 编写失败测试 - SafeExecutor白名单机制**
+
+```go
+// internal/util/exec/executor_test.go
+func TestSafeExecutor_Execute_RejectsUnauthorizedCommands(t *testing.T) {
+    // 只允许ls和tar命令
+    allowedCmds := []string{"ls", "tar"}
+    executor := NewSafeExecutor(allowedCmds)
+
+    tests := []struct {
+        name        string
+        cmd         string
+        args        []string
+        wantErr     bool
+        errContains string
+    }{
+        {
+            name:    "allowed command with args",
+            cmd:     "ls",
+            args:    []string{"-la", "/tmp"},
+            wantErr: false,
+        },
+        {
+            name:        "command not in whitelist",
+            cmd:         "sh",
+            args:        []string{"-c", "echo test"},
+            wantErr:     true,
+            errContains: "not allowed",
+        },
+        {
+            name:        "rm not allowed",
+            cmd:         "rm",
+            args:        []string{"-rf", "/"},
+            wantErr:     true,
+            errContains: "not allowed",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := executor.Execute(context.Background(), tt.cmd, tt.args...)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errContains)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 7: 运行测试确认失败**
+
+```bash
+go test ./internal/util/exec/... -v -run TestSafeExecutor
+```
+
+预期输出: `undefined: NewSafeExecutor`
+
+- [ ] **Step 8: 实现SafeExecutor**
+
+```go
+// internal/util/exec/executor.go
+package exec
+
+import (
+    "context"
+    "fmt"
+    "os/exec"
+    "strings"
+)
+
+// SafeExecutor 提供安全的命令执行，防止命令注入攻击
+type SafeExecutor struct {
+    // allowedCommands 是白名单，只允许执行预定义的命令
+    allowedCommands map[string]bool
+}
+
+// NewSafeExecutor 创建一个安全执行器，只允许白名单中的命令
+func NewSafeExecutor(allowedCommands []string) *SafeExecutor {
+    whitelist := make(map[string]bool)
+    for _, cmd := range allowedCommands {
+        whitelist[cmd] = true
+    }
+    return &SafeExecutor{
+        allowedCommands: whitelist,
+    }
+}
+
+// Execute 安全地执行命令
+func (e *SafeExecutor) Execute(ctx context.Context, cmd string, args ...string) error {
+    // 检查命令是否在白名单中
+    if !e.allowedCommands[cmd] {
+        return fmt.Errorf("command not allowed: %s", cmd)
+    }
+
+    // 验证参数中不包含shell元字符
+    for _, arg := range args {
+        for _, dangerousChar := range dangerousChars {
+            if strings.Contains(arg, dangerousChar) {
+                return fmt.Errorf("argument contains dangerous character '%s': %s", dangerousChar, arg)
+            }
+        }
+    }
+
+    // 使用参数化执行，不通过shell
+    execCmd := exec.CommandContext(ctx, cmd, args...)
+    return execCmd.Run()
+}
+
+// ExecuteString 从字符串解析并执行命令
+func (e *SafeExecutor) ExecuteString(ctx context.Context, cmdString string) error {
+    cmd, err := ParseCommand(cmdString)
+    if err != nil {
+        return err
+    }
+
+    return e.Execute(ctx, cmd.Name, cmd.Args...)
+}
+```
+
+- [ ] **Step 9: 运行测试确认通过**
+
+```bash
+go test ./internal/util/exec/... -v
+```
+
+预期输出: 所有测试通过 ✓
+
+- [ ] **Step 10: 添加更多安全测试用例**
+
+```go
+// internal/util/exec/executor_test.go
+func TestSafeExecutor_Execute_RejectsDangerousArguments(t *testing.T) {
+    allowedCmds := []string{"ls", "tar"}
+    executor := NewSafeExecutor(allowedCmds)
+
+    tests := []struct {
+        name        string
+        cmd         string
+        args        []string
+        wantErr     bool
+        errContains string
+    }{
+        {
+            name:        "argument with pipe",
+            cmd:         "ls",
+            args:        []string{"|", "rm", "-rf", "/"},
+            wantErr:     true,
+            errContains: "dangerous",
+        },
+        {
+            name:        "argument with command substitution",
+            cmd:         "ls",
+            args:        []string{"$(rm -rf /)"},
+            wantErr:     true,
+            errContains: "dangerous",
+        },
+        {
+            name:        "argument with semicolon",
+            cmd:         "tar",
+            args:        []string{"-xzvf", "file.tar.gz";", "rm", "-rf", "/"},
+            wantErr:     true,
+            errContains: "dangerous",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := executor.Execute(context.Background(), tt.cmd, tt.args...)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errContains)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 11: 运行所有测试**
+
+```bash
+go test ./internal/util/exec/... -v -race
+```
+
+预期输出: 所有测试通过，无竞态条件 ✓
+
+- [ ] **Step 12: 提交安全命令执行器**
+
+```bash
+git add internal/util/exec/
+git commit -m "feat: implement safe command executor
+
+- Add ParseCommand to reject shell metacharacters
+- Add SafeExecutor with whitelist mechanism
+- Prevent command injection attacks
+- Add comprehensive security tests
+- Validate both commands and arguments
+
+Security: This prevents command injection vulnerabilities
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: 实现输入验证层
+
+**目标:** 创建统一的输入验证函数，验证版本号、路径和URL
+
+**Files:**
+- Create: `internal/core/validation/validation.go`
+- Create: `internal/core/validation/validation_test.go`
+
+- [ ] **Step 1: 创建validation包**
+
+```bash
+mkdir -p internal/core/validation
+```
+
+- [ ] **Step 2: 编写失败测试 - 版本验证**
+
+```go
+// internal/core/validation/validation_test.go
+package validation
+
+import (
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestValidateVersion(t *testing.T) {
+    tests := []struct {
+        name    string
+        version string
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:    "valid version with patch",
+            version: "1.20.0",
+            wantErr: false,
+        },
+        {
+            name:    "valid version without patch",
+            version: "1.20",
+            wantErr: false,
+        },
+        {
+            name:    "valid version with v prefix",
+            version: "v1.20.0",
+            wantErr: false,
+        },
+        {
+            name:    "empty version",
+            version: "",
+            wantErr: true,
+            errMsg:  "cannot be empty",
+        },
+        {
+            name:    "invalid format",
+            version: "invalid",
+            wantErr: true,
+            errMsg:  "invalid format",
+        },
+        {
+            name:    "negative number",
+            version: "1.-1.0",
+            wantErr: true,
+            errMsg:  "invalid format",
+        },
+        {
+            name:    "too many parts",
+            version: "1.2.3.4",
+            wantErr: true,
+            errMsg:  "invalid format",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := ValidateVersion(tt.version)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errMsg)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 3: 运行测试确认失败**
+
+```bash
+go test ./internal/core/validation/... -v
+```
+
+预期输出: `undefined: ValidateVersion`
+
+- [ ] **Step 4: 实现版本验证**
+
+```go
+// internal/core/validation/validation.go
+package validation
+
+import (
+    "fmt"
+    "regexp"
+    "strings"
+)
+
+// versionRegex 匹配语义化版本号
+// 格式: v1.2.3 或 1.2.3 或 1.2
+var versionRegex = regexp.MustCompile(`^v?[0-9]+\.[0-9]+(\.[0-9]+)?$`)
+
+// ValidateVersion 验证版本号格式
+func ValidateVersion(version string) error {
+    if version == "" {
+        return fmt.Errorf("version cannot be empty")
+    }
+
+    version = strings.TrimSpace(version)
+
+    if !versionRegex.MatchString(version) {
+        return fmt.Errorf("invalid version format: %s (expected format: 1.2.3 or 1.2)", version)
+    }
+
+    return nil
+}
+```
+
+- [ ] **Step 5: 运行测试确认通过**
+
+```bash
+go test ./internal/core/validation/... -v
+```
+
+预期输出: 测试通过 ✓
+
+- [ ] **Step 6: 编写失败测试 - 路径验证**
+
+```go
+// internal/core/validation/validation_test.go
+func TestValidatePath(t *testing.T) {
+    tests := []struct {
+        name    string
+        path    string
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:    "valid absolute path",
+            path:    "/usr/local/go",
+            wantErr: false,
+        },
+        {
+            name:    "valid relative path",
+            path:    "./go",
+            wantErr: false,
+        },
+        {
+            name:    "valid home path",
+            path:    "~/go",
+            wantErr: false,
+        },
+        {
+            name:    "empty path",
+            path:    "",
+            wantErr: true,
+            errMsg:  "cannot be empty",
+        },
+        {
+            name:    "path traversal attempt",
+            path:    "/etc/../passwd",
+            wantErr: true,
+            errMsg:  "path traversal",
+        },
+        {
+            name:    "path traversal with ..",
+            path:    "../../../etc/passwd",
+            wantErr: true,
+            errMsg:  "path traversal",
+        },
+        {
+            name:    "null bytes",
+            path:    "/etc/passwd\x00",
+            wantErr: true,
+            errMsg:  "invalid character",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := ValidatePath(tt.path)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errMsg)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 7: 运行测试确认失败**
+
+```bash
+go test ./internal/core/validation/... -v -run TestValidatePath
+```
+
+预期输出: `undefined: ValidatePath`
+
+- [ ] **Step 8: 实现路径验证**
+
+```go
+// internal/core/validation/validation.go
+import (
+    "path/filepath"
+    "strings"
+)
+
+// ValidatePath 验证路径安全性
+func ValidatePath(path string) error {
+    if path == "" {
+        return fmt.Errorf("path cannot be empty")
+    }
+
+    path = strings.TrimSpace(path)
+
+    // 检查null字节
+    if strings.Contains(path, "\x00") {
+        return fmt.Errorf("path contains null byte")
+    }
+
+    // 清理路径
+    cleaned := filepath.Clean(path)
+
+    // 检查路径遍历
+    if strings.Contains(cleaned, "..") {
+        return fmt.Errorf("path traversal detected: %s", path)
+    }
+
+    return nil
+}
+```
+
+- [ ] **Step 9: 运行测试确认通过**
+
+```bash
+go test ./internal/core/validation/... -v
+```
+
+预期输出: 测试通过 ✓
+
+- [ ] **Step 10: 编写失败测试 - URL验证**
+
+```go
+// internal/core/validation/validation_test.go
+func TestValidateURL(t *testing.T) {
+    tests := []struct {
+        name    string
+        url     string
+        wantErr bool
+        errMsg  string
+    }{
+        {
+            name:    "valid HTTPS URL",
+            url:     "https://go.dev/dl/go1.20.0.linux-amd64.tar.gz",
+            wantErr: false,
+        },
+        {
+            name:    "valid HTTPS URL with query",
+            url:     "https://example.com/download?version=1.20",
+            wantErr: false,
+        },
+        {
+            name:    "empty URL",
+            url:     "",
+            wantErr: true,
+            errMsg:  "cannot be empty",
+        },
+        {
+            name:    "HTTP not HTTPS",
+            url:     "http://example.com/file.tar.gz",
+            wantErr: true,
+            errMsg:  "must use HTTPS",
+        },
+        {
+            name:    "invalid URL format",
+            url:     "not-a-url",
+            wantErr: true,
+            errMsg:  "invalid URL",
+        },
+        {
+            name:    "URL with spaces",
+            url:     "https://example.com/file name.tar.gz",
+            wantErr: true,
+            errMsg:  "invalid URL",
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := ValidateURL(tt.url)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.Contains(t, err.Error(), tt.errMsg)
+            } else {
+                assert.NoError(t, err)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 11: 运行测试确认失败**
+
+```bash
+go test ./internal/core/validation/... -v -run TestValidateURL
+```
+
+预期输出: `undefined: ValidateURL`
+
+- [ ] **Step 12: 实现URL验证**
+
+```go
+// internal/core/validation/validation.go
+import (
+    "net/url"
+)
+
+// ValidateURL 验证URL安全性
+func ValidateURL(urlStr string) error {
+    if urlStr == "" {
+        return fmt.Errorf("URL cannot be empty")
+    }
+
+    urlStr = strings.TrimSpace(urlStr)
+
+    // 解析URL
+    parsed, err := url.Parse(urlStr)
+    if err != nil {
+        return fmt.Errorf("invalid URL: %w", err)
+    }
+
+    // 检查协议
+    if parsed.Scheme != "https" {
+        return fmt.Errorf("URL must use HTTPS: %s", urlStr)
+    }
+
+    // 检查主机
+    if parsed.Host == "" {
+        return fmt.Errorf("URL missing host: %s", urlStr)
+    }
+
+    return nil
+}
+```
+
+- [ ] **Step 13: 运行所有验证测试**
+
+```bash
+go test ./internal/core/validation/... -v -race
+```
+
+预期输出: 所有测试通过，无竞态条件 ✓
+
+- [ ] **Step 14: 提交输入验证层**
+
+```bash
+git add internal/core/validation/
+git commit -m "feat: implement input validation layer
+
+- Add ValidateVersion for semantic version validation
+- Add ValidatePath with path traversal detection
+- Add ValidateURL requiring HTTPS
+- Prevent injection attacks through input validation
+- Add comprehensive test coverage
+
+Security: Input validation is first line of defense
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 4: 增强路径安全验证
+
+**目标:** 增强现有的path包，添加路径遍历防护
+
+**Files:**
+- Modify: `internal/util/path/path.go` (增强现有文件)
+- Modify: `internal/util/path/path_test.go` (增强测试)
+
+- [ ] **Step 1: 查看现有的path.go文件**
+
+```bash
+head -50 internal/util/path/path.go
+```
+
+- [ ] **Step 2: 编写失败测试 - 路径遍历检测**
+
+```go
+// internal/util/path/path_test.go
+package path
+
+import (
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestIsPathSafe(t *testing.T) {
+    tests := []struct {
+        name     string
+        basePath string
+        target   string
+        safe     bool
+        wantErr  bool
+    }{
+        {
+            name:     "normal subdirectory",
+            basePath: "/tmp/gvm",
+            target:   "subdir/file.txt",
+            safe:     true,
+            wantErr:  false,
+        },
+        {
+            name:     "path traversal with ..",
+            basePath: "/tmp/gvm",
+            target:   "../etc/passwd",
+            safe:     false,
+            wantErr:  true,
+        },
+        {
+            name:     "deep path traversal",
+            basePath: "/tmp/gvm",
+            target:   "subdir/../../etc/passwd",
+            safe:     false,
+            wantErr:  true,
+        },
+        {
+            name:     "absolute path escape",
+            basePath: "/tmp/gvm",
+            target:   "/etc/passwd",
+            safe:     false,
+            wantErr:  true,
+        },
+        {
+            name:     "symlink-like path",
+            basePath: "/tmp/gvm",
+            target:   "subdir/../../../etc/passwd",
+            safe:     false,
+            wantErr:  true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            safe, err := IsPathSafe(tt.basePath, tt.target)
+
+            if tt.wantErr {
+                assert.Error(t, err)
+                assert.False(t, safe)
+            } else {
+                assert.NoError(t, err)
+                assert.Equal(t, tt.safe, safe)
+            }
+        })
+    }
+}
+```
+
+- [ ] **Step 3: 运行测试确认失败**
+
+```bash
+go test ./internal/util/path/... -v -run TestIsPathSafe
+```
+
+预期输出: `undefined: IsPathSafe`
+
+- [ ] **Step 4: 实现IsPathSafe函数**
+
+```go
+// internal/util/path/path.go
+package path
+
+import (
+    "fmt"
+    "path/filepath"
+    "strings"
+)
+
+// IsPathSafe 检查目标路径是否在基础路径内，防止路径遍历攻击
+func IsPathSafe(basePath, targetPath string) (bool, error) {
+    // 解析为绝对路径
+    absBase, err := filepath.Abs(basePath)
+    if err != nil {
+        return false, fmt.Errorf("failed to resolve base path: %w", err)
+    }
+
+    // 构建完整目标路径
+    fullTarget := filepath.Join(basePath, targetPath)
+    absTarget, err := filepath.Abs(fullTarget)
+    if err != nil {
+        return false, fmt.Errorf("failed to resolve target path: %w", err)
+    }
+
+    // 检查目标路径是否在基础路径内
+    rel, err := filepath.Rel(absBase, absTarget)
+    if err != nil {
+        return false, fmt.Errorf("failed to compute relative path: %w", err)
+    }
+
+    // 如果相对路径以..开头，说明试图逃逸
+    if strings.HasPrefix(rel, "..") {
+        return false, fmt.Errorf("path traversal attempt detected: %s tries to escape %s", targetPath, basePath)
+    }
+
+    return true, nil
+}
+```
+
+- [ ] **Step 5: 运行测试确认通过**
+
+```bash
+go test ./internal/util/path/... -v -race
+```
+
+预期输出: 所有测试通过，无竞态条件 ✓
+
+- [ ] **Step 6: 提交路径安全增强**
+
+```bash
+git add internal/util/path/
+git commit -m "feat: add path traversal protection to path util
+
+- Add IsPathSafe function to detect path traversal attempts
+- Prevent directory escape attacks
+- Validate relative paths don't escape base directory
+- Add comprehensive security tests
+
+Security: Prevents zip-slip and path traversal attacks
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 5: 配置CI/CD流水线
+
+**目标:** 设置GitHub Actions工作流，自动运行测试、代码检查和安全扫描
+
+**Files:**
+- Create: `.github/workflows/test.yml`
+- Create: `.github/workflows/lint.yml`
+- Create: `.github/workflows/security.yml`
+- Modify: `Makefile`
+
+- [ ] **Step 1: 创建workflows目录**
+
+```bash
+mkdir -p .github/workflows
+```
+
+- [ ] **Step 2: 创建测试工作流**
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+
+on:
+  push:
+    branches: [main, feat/rui]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        go-version: ['1.26']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go-version }}
+
+    - name: Install dependencies
+      run: |
+        go mod download
+        go install github.com/stretchr/testify/mock/mockgen@latest
+
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.out ./...
+
+    - name: Check coverage
+      run: |
+        coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Total coverage: $coverage%"
+        if (( $(echo "$coverage < 80" | bc -l) )); then
+          echo "Coverage is below 80%"
+          exit 1
+        fi
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        fail_ci_if_error: false
+
+    - name: Build
+      run: go build -v ./...
+```
+
+- [ ] **Step 3: 创建代码检查工作流**
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+
+on:
+  push:
+    branches: [main, feat/rui]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.26'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: latest
+        args: --timeout=10m
+
+    - name: Check code formatting
+      run: |
+        fmt_output=$(gofmt -l .)
+        if [ -n "$fmt_output" ]; then
+          echo "Code is not formatted:"
+          echo "$fmt_output"
+          exit 1
+        fi
+
+    - name: Check for go.mod consistency
+      run: |
+        go mod tidy
+        if ! git diff --exit-code go.mod go.sum; then
+          echo "go.mod/go.sum are not consistent"
+          exit 1
+        fi
+```
+
+- [ ] **Step 4: 创建安全扫描工作流**
+
+```yaml
+# .github/workflows/security.yml
+name: Security
+
+on:
+  push:
+    branches: [main, feat/rui]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.26'
+
+    - name: Run Gosec Security Scanner
+      uses: securego/gosec@master
+      with:
+        args: ./...
+
+    - name: Check for vulnerabilities
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Run trivy fs scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+```
+
+- [ ] **Step 5: 更新Makefile添加测试目标**
+
+```makefile
+# 添加到现有Makefile
+
+.PHONY: test test-coverage test-race lint dev-tools security clean
+
+# 运行所有测试
+test:
+	go test -v ./...
+
+# 运行带覆盖率的测试
+test-coverage:
+	go test -v -race -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
+
+# 运行竞态检测
+test-race:
+	go test -race ./...
+
+# 代码检查
+lint:
+	golangci-lint run
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "Code is not formatted. Run 'gofmt -w .'"; \
+		gofm -l .; \
+		exit 1; \
+	fi
+
+# 安全扫描
+security:
+	@echo "Running security checks..."
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	govulncheck ./...
+
+# 安装开发工具
+dev-tools:
+	go install github.com/stretchr/testify/mock/mockgen@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	@echo "Development tools installed"
+
+# 清理
+clean:
+	go clean
+	rm -f coverage.out coverage.html
+```
+
+- [ ] **Step 6: 测试Makefile目标**
+
+```bash
+make dev-tools
+make test
+make lint
+```
+
+预期输出: 所有命令成功执行
+
+- [ ] **Step 7: 提交CI/CD配置**
+
+```bash
+git add .github/workflows/ Makefile
+git commit -m "feat: add CI/CD pipeline with security scanning
+
+- Add GitHub Actions workflow for testing
+- Add golangci-lint workflow
+- Add security scanning (gosec, govulncheck, trivy)
+- Add Makefile targets for local development
+- Enforce code formatting and mod consistency
+- Check test coverage threshold (80%)
+- Run race detector on all tests
+
+CI: Improves code quality and security
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 6: 创建测试文档
+
+**目标:** 编写测试框架和TDD流程文档
+
+**Files:**
+- Create: `docs/testing/test-framework.md`
+- Create: `docs/testing/tdd-workflow.md`
+
+- [ ] **Step 1: 创建文档目录**
+
+```bash
+mkdir -p docs/testing
+```
+
+- [ ] **Step 2: 创建测试框架文档**
+
+```markdown
+# GVM测试框架文档
+
+## 概述
+
+GVM项目使用testify作为主要测试框架，遵循严格的TDD方法论。
+
+## 测试框架组件
+
+### 1. 测试辅助工具 (test/framework)
+
+#### SetupTestEnvironment
+创建临时测试环境。
+
+```go
+func TestExample(t *testing.T) {
+    tempDir, cleanup := framework.SetupTestEnvironment(t)
+    defer cleanup()
+
+    // 使用tempDir进行测试
+}
+```
+
+#### CreateTestFile
+在测试目录中创建文件。
+
+```go
+func TestFileOperation(t *testing.T) {
+    tempDir, cleanup := framework.SetupTestEnvironment(t)
+    defer cleanup()
+
+    testFile := filepath.Join(tempDir, "test.txt")
+    framework.CreateTestFile(t, testFile, "content")
+
+    framework.AssertFileExists(t, testFile)
+}
+```
+
+### 2. 测试断言
+
+使用testify/assert进行断言：
+
+```go
+import "github.com/stretchr/testify/assert"
+
+func TestAssertion(t *testing.T) {
+    assert.Equal(t, expected, actual)
+    assert.NoError(t, err)
+    assert.Contains(t, str, substr)
+    assert.True(t, condition)
+}
+```
+
+### 3. Mock对象
+
+使用testify/mock创建mock：
+
+```go
+import "github.com/stretchr/testify/mock"
+
+type MockDownloader struct {
+    mock.Mock
+}
+
+func (m *MockDownloader) Download(ctx context.Context, url string) (io.ReadCloser, error) {
+    args := m.Called(ctx, url)
+    return args.Get(0).(io.ReadCloser), args.Error(1)
+}
+```
+
+## 测试分类
+
+### 单元测试
+- 测试单个函数或方法
+- 使用mock对象隔离依赖
+- 快速执行（毫秒级）
+
+### 集成测试
+- 测试多个组件交互
+- 使用真实文件系统（临时目录）
+- 较慢执行（秒级）
+
+### 端到端测试
+- 测试完整工作流
+- 测试真实场景
+- 最慢执行（分钟级）
+
+## 运行测试
+
+```bash
+# 运行所有测试
+make test
+
+# 运行特定包的测试
+go test ./internal/core/validation/...
+
+# 运行特定测试
+go test -run TestValidateVersion ./internal/core/validation/...
+
+# 运行带覆盖率的测试
+make test-coverage
+
+# 运行竞态检测
+make test-race
+
+# 跳过慢测试
+go test -short ./...
+```
+
+## 测试覆盖率目标
+
+- 每个模块覆盖率 ≥ 80%
+- 使用`go test -coverprofile=coverage.out`生成覆盖率报告
+- 使用`go tool cover -html=coverage.out`查看HTML报告
+
+## 最佳实践
+
+1. **测试命名**: 使用`Test<FunctionName>_<Scenario>`格式
+2. **表驱动测试**: 使用测试表覆盖多个场景
+3. **清晰的错误信息**: 使用assert.Error()包含期望的错误信息
+4. **清理资源**: 使用defer确保测试资源被清理
+5. **并发安全**: 所有测试必须通过`go test -race`
+```
+
+- [ ] **Step 3: 创建TDD流程文档**
+
+```markdown
+# TDD流程文档
+
+## 什么是TDD
+
+测试驱动开发（Test-Driven Development）是一种开发方法论，要求先编写测试，然后编写代码使测试通过。
+
+## TDD循环
+
+### Red（红）- 编写失败的测试
+
+先编写一个失败的测试，描述你想要实现的功能。
+
+```go
+func TestValidateVersion_ValidVersion_ReturnsNoError(t *testing.T) {
+    err := ValidateVersion("1.20.0")
+    assert.NoError(t, err)  // 这会失败，因为函数还不存在
+}
+```
+
+运行测试确认失败：
+```bash
+go test ./internal/core/validation/... -v
+# 输出: undefined: ValidateVersion
+```
+
+### Green（绿）- 编写最小实现
+
+编写最简单的代码使测试通过。
+
+```go
+func ValidateVersion(version string) error {
+    return nil  // 最简单的实现
+}
+```
+
+运行测试确认通过：
+```bash
+go test ./internal/core/validation/... -v
+# 输出: PASS
+```
+
+### Refactor（重构）- 改进代码
+
+现在测试通过了，改进代码质量和正确性。
+
+```go
+func ValidateVersion(version string) error {
+    if version == "" {
+        return fmt.Errorf("version cannot be empty")
+    }
+    // 添加更多验证逻辑...
+    return nil
+}
+```
+
+运行测试确保仍然通过：
+```bash
+go test ./internal/core/validation/... -v
+# 输出: PASS
+```
+
+重复这个循环！
+
+## GVM项目的TDD规则
+
+1. **绝不跳过Red阶段**: 必须先写测试
+2. **最小化Green阶段**: 只写足够通过测试的代码
+3. **频繁重构**: 测试保护下安全重构
+4. **小步前进**: 每个循环只实现一个小功能
+5. **持续集成**: 每次提交都运行完整测试套件
+
+## 常见错误
+
+### ❌ 编写太多测试再实现
+**正确**: 一次写一个测试，立即实现
+
+### ❌ 跳过重构阶段
+**正确**: 测试通过后立即重构改进
+
+### ❌ 测试实现细节
+**正确**: 测试行为和接口，不测试内部实现
+
+### ❌ 忽略失败的测试
+**正确**: 所有测试必须通过才能继续
+
+## 示例：完整TDD循环
+
+### Step 1: 编写失败测试
+
+```go
+func TestParseCommand_RejectsPipe(t *testing.T) {
+    cmd, err := ParseCommand("ls | rm")
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "dangerous")
+    assert.Nil(t, cmd)
+}
+```
+
+运行: 失败 ✓
+
+### Step 2: 最小实现
+
+```go
+func ParseCommand(cmdString string) (*Command, error) {
+    if strings.Contains(cmdString, "|") {
+        return nil, fmt.Errorf("command contains dangerous character: |")
+    }
+    return &Command{Name: cmdString}, nil
+}
+```
+
+运行: 通过 ✓
+
+### Step 3: 重构改进
+
+```go
+var dangerousChars = []string{"|", "&", ";", ...}
+
+func ParseCommand(cmdString string) (*Command, error) {
+    for _, char := range dangerousChars {
+        if strings.Contains(cmdString, char) {
+            return nil, fmt.Errorf("command contains dangerous character: %s", char)
+        }
+    }
+    // 解析命令和参数
+    parts := strings.Fields(cmdString)
+    return &Command{Name: parts[0], Args: parts[1:]}, nil
+}
+```
+
+运行: 仍然通过 ✓
+
+## 总结
+
+TDD不是慢，而是更快！
+- 更少的调试时间
+- 更高的代码质量
+- 更自信的重构
+- 活的文档
+
+记住：**Red → Green → Refactor**
+```
+
+- [ ] **Step 4: 提交测试文档**
+
+```bash
+git add docs/testing/
+git commit -m "docs: add testing framework and TDD workflow documentation
+
+- Add test framework guide with examples
+- Document test utilities and helpers
+- Add TDD workflow guide with Red-Green-Refactor
+- Provide best practices and common pitfalls
+- Include code examples for all scenarios
+
+Docs: Helps developers follow TDD methodology
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+## 第一阶段完成检查清单
+
+在进入第二阶段之前，确认以下所有项目已完成：
+
+### 测试框架
+- [ ] test/framework/setup.go 创建并测试
+- [ ] test/framework/fixtures.go 创建并测试
+- [ ] test/framework/helpers.go 创建并测试
+- [ ] 所有测试通过且无竞态条件
+
+### 安全模块
+- [ ] internal/util/exec/executor.go 实现
+- [ ] SafeExecutor 白名单机制工作正常
+- [ ] ParseCommand 拒绝所有危险字符
+- [ ] 测试覆盖率达到80%+
+
+### 输入验证
+- [ ] internal/core/validation/validation.go 实现
+- [ ] 版本验证正常工作
+- [ ] 路径验证检测遍历攻击
+- [ ] URL验证要求HTTPS
+- [ ] 所有测试通过
+
+### 路径安全
+- [ ] internal/util/path/path.go 增强
+- [ ] IsPathSafe 检测路径遍历
+- [ ] 测试覆盖所有攻击场景
+
+### CI/CD
+- [ ] GitHub Actions测试工作流配置
+- [ ] golangci-lint工作流配置
+- [ ] 安全扫描工作流配置
+- [ ] Makefile目标测试通过
+- [ ] CI管道在GitHub上成功运行
+
+### 文档
+- [ ] 测试框架文档完整
+- [ ] TDD流程文档完整
+- [ ] 所有代码示例可运行
+
+### 质量门槛
+- [ ] 所有单元测试通过
+- [ ] go test -race 无竞态警告
+- [ ] go test -cover ≥80%
+- [ ] golangci-lint 无错误
+- [ ] 安全扫描无高危漏洞
+
+---
+
+## 下一步
+
+完成第一阶段后，进入**第二阶段：核心模块重构**：
+- 重构 config 模块（移除panic）
+- 重构 registry 模块（添加并发安全）
+- 重构 http client 模块（修复资源泄漏）
+
+**准备好进入第二阶段时，运行：**
+```bash
+git tag phase1-complete
+git push origin phase1-complete
+```

@@ -2584,7 +2584,368 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-### Task 12: 创建测试文档
+### Task 12: 修复关键环境变量问题
+
+**目标:** 修复各语言实现中的关键环境变量遗漏问题
+
+**Files:**
+- Modify: `languages/java/java.go`
+- Modify: `languages/python/python.go`
+- Modify: `languages/golang/golang.go`
+- Modify: `languages/node/node.go`
+- Create: `languages/env/` (新建通用环境变量工具)
+
+- [ ] **Step 1: 创建环境变量配置包**
+
+```bash
+mkdir -p languages/env
+```
+
+- [ ] **Step 2: 编写失败测试 - Java缺少JAVA_HOME**
+
+```go
+// languages/env/java_env_test.go
+package env
+
+import (
+    "testing"
+
+    "github.com/stretchr/testify/assert"
+)
+
+func TestGetJavaEnvVars(t *testing.T) {
+    installPath := "/opt/gvm/versions/java/openjdk-17"
+    envVars := GetJavaEnvVars(installPath)
+
+    // 验证JAVA_HOME设置
+    javaHome, ok := envVars["JAVA_HOME"]
+    assert.True(t, ok, "JAVA_HOME must be set")
+    assert.Equal(t, installPath, javaHome)
+
+    // 验证PATH包含JAVA_HOME/bin
+    path, ok := envVars["PATH"]
+    assert.True(t, ok, "PATH must be set")
+    assert.Contains(t, path, installPath+"/bin")
+}
+```
+
+- [ ] **Step 3: 运行测试确认失败**
+
+```bash
+go test ./languages/env/... -v
+```
+
+预期输出: `undefined: GetJavaEnvVars`
+
+- [ ] **Step 4: 实现Java环境变量**
+
+```go
+// languages/env/java_env.go
+package env
+
+import (
+    "filepath"
+)
+
+// JavaEnvVars 返回Java环境变量配置
+func GetJavaEnvVars(installPath string) map[string]string {
+    envVars := make(map[string]string)
+
+    // 关键: JAVA_HOME是必须的
+    envVars["JAVA_HOME"] = installPath
+
+    // CLASSPATH建议设置
+    envVars["CLASSPATH"] = "."
+    // 可选: 添加JVM参数
+    // envVars["JAVA_TOOL_OPTIONS"] = "-Dfile.encoding=UTF-8"
+
+    return envVars
+}
+```
+
+- [ ] **Step 5: 编写Python环境变量测试**
+
+```go
+// languages/env/python_env_test.go
+func TestGetPythonEnvVars(t *testing.T) {
+    installPath := "/opt/gvm/versions/python/3.9.7"
+    envVars := GetPythonEnvVars(installPath)
+
+    // 验证PYTHONHOME设置
+    pythonHome, ok := envVars["PYTHONHOME"]
+    assert.True(t, ok, "PYTHONHOME must be set")
+    assert.Equal(t, installPath, pythonHome)
+
+    // 验证PATH包含bin
+    path, ok := envVars["PATH"]
+    assert.True(t, ok, "PATH must be set")
+    assert.Contains(t, path, installPath+"/bin")
+}
+```
+
+- [ ] **Step 6: 实现Python环境变量**
+
+```go
+// languages/env/python_env.go
+package env
+
+import "filepath"
+
+// PythonEnvVars 返回Python环境变量配置
+func GetPythonEnvVars(installPath string) map[string]string {
+    envVars := make(map[string]string)
+
+    // 关键: PYTHONHOME被注释了，需要恢复
+    envVars["PYTHONHOME"] = installPath
+
+    // 推荐: PYTHONPATH
+    envVars["PYTHONPATH"] = filepath.Join(installPath, "lib", "python3.9", "site-packages")
+
+    // 推荐: 性能优化
+    envVars["PYTHONDONTWRITEBYTECODE"] = "1"
+
+    // 推荐: 非缓冲输出
+    envVars["PYTHONUNBUFFERED"] = "1"
+
+    // 推荐: 编码设置
+    envVars["PYTHONIOENCODING"] = "utf-8"
+
+    return envVars
+}
+```
+
+- [ ] **Step 7: 编写Go环境变量测试**
+
+```go
+// languages/env/golang_env_test.go
+func TestGetGolangEnvVars(t *testing.T) {
+    installPath := "/opt/gvm/versions/go/1.20.0"
+    gopath := "/opt/gvm/gopath"
+    envVars := GetGolangEnvVars(installPath, gopath)
+
+    // 验证GOROOT
+    goRoot, ok := envVars["GOROOT"]
+    assert.True(t, ok, "GOROOT must be set")
+    assert.Equal(t, installPath, goRoot)
+
+    // 验证GOPATH
+    goPath, ok := envVars["GOPATH"]
+    assert.True(t, ok, "GOPATH must be set")
+    assert.Equal(t, gopath, goPath)
+
+    // 验证GO111MODULE
+    goModule, ok := envVars["GO111MODULE"]
+    assert.True(t, ok, "GO111MODULE must be set")
+    assert.Equal(t, "on", goModule)
+}
+```
+
+- [ ] **Step 8: 实现Go环境变量**
+
+```go
+// languages/env/golang_env.go
+package env
+
+// GolangEnvVars 返回Go环境变量配置
+func GetGolangEnvVars(installPath, gopath string) map[string]string {
+    envVars := make(map[string]string)
+
+    // 基础变量
+    envVars["GOROOT"] = installPath
+    envVars["GOPATH"] = gopath
+
+    // 关键: Go模块支持
+    envVars["GO111MODULE"] = "on"
+
+    // 推荐: Go模块代理 (中国用户)
+    // envVars["GOPROXY"] = "https://goproxy.cn,direct"
+    // envVars["GOSUMDB"] = "sum.golang.google.cn"
+
+    // 推荐: 工具链版本管理 (Go 1.21+)
+    // envVars["GOTOOLCHAIN"] = "auto"
+
+    // 可选: GOBIN
+    envVars["GOBIN"] = filepath.Join(gopath, "bin")
+
+    return envVars
+}
+```
+
+- [ ] **Step 9: 更新Java实现使用新环境变量**
+
+```go
+// languages/java/java.go
+
+import (
+    "gvm/languages/env"
+    // ...
+)
+
+func (j *Java) SetDefaultVersion(ctx context.Context, version string) error {
+    installPath := filepath.Join(path.GetLangRoot(lang), path.Current)
+
+    // 使用新的环境变量函数
+    envMap := env.GetJavaEnvVars(installPath)
+
+    // 转换为env.KV格式
+    envs := make([]env.KV, 0, len(envMap)+1)
+    for key, value := range envMap {
+        envs = append(envs, env.KV{
+            Key:    key,
+            Value:  value,
+        })
+    }
+
+    // 添加PATH
+    envs = append(envs, env.KV{
+        Key:    "PATH",
+        Value:  filepath.Join(installPath, "bin"),
+        Append: true,
+    })
+
+    return languages.NewLanguage(j).SetDefaultVersion(ctx, version, envs)
+}
+```
+
+- [ ] **Step 10: 更新Python实现**
+
+```go
+// languages/python/python.go
+
+import (
+    "gvm/languages/env"
+    // ...
+)
+
+func (p *Python) SetDefaultVersion(ctx context.Context, version string) error {
+    installPath := filepath.Join(path.GetLangRoot(p.Name()), path.Current)
+
+    // 使用新的环境变量函数
+    envMap := env.GetPythonEnvVars(installPath)
+
+    // 转换为env.KV格式
+    envs := make([]env.KV, 0, len(envMap)+2)
+    for key, value := range envMap {
+        envs = append(envs, env.KV{
+            Key:    key,
+            Value:  value,
+        })
+    }
+
+    // 添加PATH
+    envs = append(envs, env.KV{
+        Key:    "PATH",
+        Value:  filepath.Join(installPath, "bin"),
+        Append: true,
+    })
+
+    // 添加LD_LIBRARY_PATH (Linux/Unix)
+    envs = append(envs, env.KV{
+        Key:    "LD_LIBRARY_PATH",
+        Value:  filepath.Join(installPath, "lib"),
+        Append: true,
+    })
+
+    return languages.NewLanguage(p).SetDefaultVersion(ctx, version, envs)
+}
+```
+
+- [ ] **Step 11: 更新Go实现**
+
+```go
+// languages/golang/golang.go
+
+import (
+    "gvm/languages/env"
+    // ...
+)
+
+func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
+    installPath := filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go")
+    gopath := filepath.Join(path.GetLangRoot(g.Name()), "gopath")
+    _ = os.MkdirAll(gopath, os.ModePerm)
+
+    // 使用新的环境变量函数
+    envMap := env.GetGolangEnvVars(installPath, gopath)
+
+    // 转换为env.KV格式
+    envs := make([]env.KV, 0, len(envMap)+2)
+    for key, value := range envMap {
+        // PATH需要特殊处理
+        if key == "PATH" {
+            if strings.Contains(value, "bin") {
+                envs = append(envs, env.KV{
+                    Key:    "PATH",
+                    Value:  value,
+                    Append: true,
+                })
+            }
+        } else {
+            envs = append(envs, env.KV{
+                Key:    key,
+                Value:  value,
+            })
+        }
+    }
+
+    // 添加GOROOT/bin到PATH
+    envs = append(envs, env.KV{
+        Key:    "PATH",
+        Value:  filepath.Join(installPath, "bin"),
+        Append: true,
+    })
+
+    // 添加GOPATH/bin到PATH
+    envs = append(envs, env.KV{
+        Key:    "PATH",
+        Value:  filepath.Join(gopath, "bin"),
+        Append: true,
+    })
+
+    return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
+}
+```
+
+- [ ] **Step 12: 运行所有测试**
+
+```bash
+go test ./languages/env/... -v -race
+```
+
+预期输出: 所有测试通过 ✓
+
+- [ ] **Step 13: 提交环境变量修复**
+
+```bash
+git add languages/env/ languages/java/ languages/python/ languages/golang/
+git commit -m "fix: add missing critical environment variables
+
+修复P0严重问题:
+- Java: 添加JAVA_HOME (关键)
+- Python: 恢复PYTHONHOME (被注释)
+- Go: 添加GO111MODULE=on
+
+新增功能:
+- 创建languages/env包统一管理环境变量
+- Python: 添加PYTHONPATH, 性能优化配置
+- Go: 添加GOBIN配置
+- 为所有环境变量添加测试
+
+修复影响:
+- Java工具现在可以正常工作
+- Python可以找到标准库
+- Go模块行为一致可预测
+
+分析文档: docs/superpowers/analysis/environment-variables-analysis.md
+
+Fixes: Resolves critical environment variable issues
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 13: 创建测试文档
 
 **目标:** 编写测试框架和TDD流程文档
 
@@ -2945,6 +3306,14 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 - [ ] 性能基线建立
 - [ ] 性能目标文档化
 - [ ] Makefile benchmark目标工作
+
+### 环境变量
+- [ ] languages/env/ 包创建
+- [ ] Java添加JAVA_HOME
+- [ ] Python恢复PYTHONHOME
+- [ ] Go添加GO111MODULE
+- [ ] 所有环境变量测试通过
+- [ ] 分析文档完成
 
 ### CI/CD
 - [ ] GitHub Actions测试工作流配置
