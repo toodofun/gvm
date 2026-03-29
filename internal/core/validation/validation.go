@@ -80,13 +80,17 @@ func ValidateURL(urlStr string) error {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
-	// Check for missing host before checking scheme
-	if parsed.Host == "" {
-		return fmt.Errorf("URL missing host")
+	// Check for missing or empty scheme before checking host
+	if parsed.Scheme == "" {
+		return fmt.Errorf("invalid URL: missing scheme")
 	}
 
 	if parsed.Scheme != "https" {
 		return fmt.Errorf("URL must use HTTPS: %s", urlStr)
+	}
+
+	if parsed.Host == "" {
+		return fmt.Errorf("URL missing host")
 	}
 
 	// SSRF protection - block localhost and private IPs
