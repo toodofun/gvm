@@ -139,7 +139,7 @@ func CreateTestFile(t *testing.T, path, content string) {
         t.Fatalf("failed to create directory: %v", err)
     }
 
-    if err := ioutil.WriteFile(path, []byte(content), 0644); err != nil {
+    if err := os.WriteFile(path, []byte(content), 0644); err != nil {
         t.Fatalf("failed to write file: %v", err)
     }
 }
@@ -2584,7 +2584,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 
 ---
 
-### Task 6: 创建测试文档
+### Task 12: 创建测试文档
 
 **目标:** 编写测试框架和TDD流程文档
 
