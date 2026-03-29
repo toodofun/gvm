@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/toodofun/gvm/internal/core"
 )
@@ -84,4 +86,33 @@ func IsPathExist(dir string) bool {
 		return false
 	}
 	return true
+}
+
+// IsPathSafe checks if target path is within base path, preventing path traversal attacks
+func IsPathSafe(basePath, targetPath string) (bool, error) {
+	// Resolve to absolute paths
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve base path: %w", err)
+	}
+
+	// Build full target path
+	fullTarget := filepath.Join(basePath, targetPath)
+	absTarget, err := filepath.Abs(fullTarget)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve target path: %w", err)
+	}
+
+	// Check if target path is within base path
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return false, fmt.Errorf("failed to compute relative path: %w", err)
+	}
+
+	// If relative path starts with .., it tries to escape
+	if strings.HasPrefix(rel, "..") {
+		return false, fmt.Errorf("path traversal attempt detected: %s tries to escape %s", targetPath, basePath)
+	}
+
+	return true, nil
 }

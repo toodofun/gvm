@@ -151,3 +151,71 @@ func TestIsPathExist(t *testing.T) {
 		t.Errorf("expected path to not exist: %s", nonexistent)
 	}
 }
+
+func TestIsPathSafe(t *testing.T) {
+	tests := []struct {
+		name     string
+		basePath string
+		target   string
+		safe     bool
+		wantErr  bool
+	}{
+		{
+			name:     "normal subdirectory",
+			basePath: "/tmp/gvm",
+			target:   "subdir/file.txt",
+			safe:     true,
+			wantErr:  false,
+		},
+		{
+			name:     "path traversal with ..",
+			basePath: "/tmp/gvm",
+			target:   "../etc/passwd",
+			safe:     false,
+			wantErr:  true,
+		},
+		{
+			name:     "deep path traversal",
+			basePath: "/tmp/gvm",
+			target:   "subdir/../../etc/passwd",
+			safe:     false,
+			wantErr:  true,
+		},
+		{
+			name:     "absolute path escape",
+			basePath: "/tmp/gvm",
+			target:   "/etc/passwd",
+			safe:     false,
+			wantErr:  true,
+		},
+		{
+			name:     "symlink-like path",
+			basePath: "/tmp/gvm",
+			target:   "subdir/../../../etc/passwd",
+			safe:     false,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			safe, err := gvmpath.IsPathSafe(tt.basePath, tt.target)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("expected error but got none")
+				}
+				if safe {
+					t.Errorf("expected path to be unsafe, got safe=true")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+				if safe != tt.safe {
+					t.Errorf("expected safe=%v, got safe=%v", tt.safe, safe)
+				}
+			}
+		})
+	}
+}
