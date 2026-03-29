@@ -3,9 +3,7 @@ package framework
 import (
     "archive/tar"
     "compress/gzip"
-    "io"
     "os"
-    "path/filepath"
 )
 
 // CreateTarGzFixture creates a test tar.gz file

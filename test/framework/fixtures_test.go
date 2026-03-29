@@ -1,7 +1,6 @@
 package framework
 
 import (
-    "os"
     "path/filepath"
     "testing"
 )

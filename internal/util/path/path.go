@@ -96,8 +96,14 @@ func IsPathSafe(basePath, targetPath string) (bool, error) {
 		return false, fmt.Errorf("failed to resolve base path: %w", err)
 	}
 
-	// Build full target path
-	fullTarget := filepath.Join(basePath, targetPath)
+	// If targetPath is already an absolute path, use it directly
+	// Otherwise, join it with basePath
+	var fullTarget string
+	if filepath.IsAbs(targetPath) {
+		fullTarget = targetPath
+	} else {
+		fullTarget = filepath.Join(basePath, targetPath)
+	}
 
 	// Check if the path is a symlink before resolving
 	info, err := os.Lstat(fullTarget)

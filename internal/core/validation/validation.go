@@ -51,6 +51,13 @@ func ValidatePath(path string) error {
 		return fmt.Errorf("path contains null byte")
 	}
 
+	// Check for path traversal patterns in original path (before cleaning)
+	// This catches patterns like "/etc/../passwd" which Clean() would normalize away
+	if strings.Contains(path, "..") {
+		return fmt.Errorf("path traversal detected")
+	}
+
+	// Also check cleaned path for any remaining traversal attempts
 	cleaned := filepath.Clean(path)
 	if strings.Contains(cleaned, "..") {
 		return fmt.Errorf("path traversal detected")
@@ -73,12 +80,13 @@ func ValidateURL(urlStr string) error {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
-	if parsed.Scheme != "https" {
-		return fmt.Errorf("URL must use HTTPS: %s", urlStr)
-	}
-
+	// Check for missing host before checking scheme
 	if parsed.Host == "" {
 		return fmt.Errorf("URL missing host")
+	}
+
+	if parsed.Scheme != "https" {
+		return fmt.Errorf("URL must use HTTPS: %s", urlStr)
 	}
 
 	// SSRF protection - block localhost and private IPs
