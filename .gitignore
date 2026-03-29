@@ -143,4 +143,5 @@ config-dev.yaml
 
 /tmp
 gvm
-bin
+bin# Ignore docs directory - local design documents only
+docs/
