@@ -46,8 +46,9 @@ var GetRootDir = func() string {
 	// 1. 优先使用环境变量 GVM_ROOT
 	if custom := os.Getenv("GVM_ROOT"); custom != "" {
 		if !strings.Contains(custom, " ") {
-			ensureDir(custom)
-			return custom
+			if err := ensureDir(custom); err == nil {
+				return custom
+			}
 		}
 	}
 
@@ -55,8 +56,9 @@ var GetRootDir = func() string {
 	if cfgDir, err := os.UserConfigDir(); err == nil && cfgDir != "" {
 		path := filepath.Join(cfgDir, defaultDir)
 		if !strings.Contains(path, " ") {
-			ensureDir(path)
-			return path
+			if err := ensureDir(path); err == nil {
+				return path
+			}
 		}
 	}
 
@@ -65,22 +67,31 @@ var GetRootDir = func() string {
 	if home != "" {
 		path := filepath.Join(home, defaultDir)
 		if !strings.Contains(path, " ") {
-			ensureDir(path)
-			return path
+			if err := ensureDir(path); err == nil {
+				return path
+			}
 		}
 	}
 
 	// 4. 最后兜底到 /opt/gvm
 	fallback := filepath.Join("/opt", "gvm")
-	ensureDir(fallback)
+	if err := ensureDir(fallback); err != nil {
+		// If all else fails, return temp directory as last resort
+		if tmpDir := os.TempDir(); tmpDir != "" {
+			path := filepath.Join(tmpDir, defaultDir)
+			_ = ensureDir(path)
+			return path
+		}
+	}
 	return fallback
 }
 
-// ensureDir 创建目录并在失败时 panic
-func ensureDir(dir string) {
+// ensureDir 创建目录并在失败时返回错误
+func ensureDir(dir string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		panic("无法创建配置目录: " + err.Error())
+		return err
 	}
+	return nil
 }
 
 func GetConfigPath() string {
