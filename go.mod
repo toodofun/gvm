@@ -7,7 +7,7 @@ require (
 	github.com/fatih/color v1.19.0
 	github.com/gdamore/tcell/v2 v2.13.8
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-version v1.8.0
+	github.com/hashicorp/go-version v1.9.0
 	github.com/jedib0t/go-pretty/v6 v6.7.8
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
