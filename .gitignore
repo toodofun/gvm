@@ -133,8 +133,13 @@ vendordiff.patch
 *.db
 *.sqlite
 
+# backup files
+*.bak
+*.backup
+*.old
+
 # swagger
-docs
+# docs directory removed from ignore - we want to track design documents
 
 # test coverage
 coverage.out
@@ -144,3 +149,6 @@ config-dev.yaml
 /tmp
 gvm
 bin
+
+# Ignore docs directory - local design documents only
+docs/

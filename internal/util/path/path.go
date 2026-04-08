@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/toodofun/gvm/internal/core"
 )
@@ -84,4 +86,92 @@ func IsPathExist(dir string) bool {
 		return false
 	}
 	return true
+}
+
+// IsPathSafe checks if target path is within base path, preventing path traversal attacks
+func IsPathSafe(basePath, targetPath string) (bool, error) {
+	// Resolve to absolute paths
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve base path: %w", err)
+	}
+
+	// If targetPath is already an absolute path, use it directly
+	// Otherwise, join it with basePath
+	var fullTarget string
+	if filepath.IsAbs(targetPath) {
+		fullTarget = targetPath
+	} else {
+		fullTarget = filepath.Join(basePath, targetPath)
+	}
+
+	// Check if the path is a symlink before resolving
+	info, err := os.Lstat(fullTarget)
+	if err == nil && info.Mode()&os.ModeSymlink != 0 {
+		// Path is a symlink, check if it's safe
+		if err := CheckSymlinkSafety(basePath, fullTarget); err != nil {
+			return false, err
+		}
+	}
+
+	absTarget, err := filepath.Abs(fullTarget)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve target path: %w", err)
+	}
+
+	// Check if target path is within base path
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return false, fmt.Errorf("failed to compute relative path: %w", err)
+	}
+
+	// If relative path starts with .., it tries to escape
+	if strings.HasPrefix(rel, "..") {
+		return false, fmt.Errorf("path traversal attempt detected: %s tries to escape %s", targetPath, basePath)
+	}
+
+	return true, nil
+}
+
+// CheckSymlinkSafety verifies that a symlink does not escape the base directory
+func CheckSymlinkSafety(basePath, linkPath string) error {
+	// Read symlink target
+	target, err := os.Readlink(linkPath)
+	if err != nil {
+		return fmt.Errorf("failed to read symlink %s: %w", linkPath, err)
+	}
+
+	// Resolve symlink target to absolute path
+	var absTarget string
+	if filepath.IsAbs(target) {
+		// Absolute symlink
+		absTarget = target
+	} else {
+		// Relative symlink - resolve relative to the directory containing the symlink
+		linkDir := filepath.Dir(linkPath)
+		absTarget = filepath.Join(linkDir, target)
+	}
+
+	// Clean the absolute target path
+	absTarget = filepath.Clean(absTarget)
+
+	// Get absolute base path
+	absBase, err := filepath.Abs(basePath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve base path: %w", err)
+	}
+	absBase = filepath.Clean(absBase)
+
+	// Check if symlink target is within base path
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return fmt.Errorf("failed to compute relative path from base to symlink target: %w", err)
+	}
+
+	// If relative path starts with .., symlink escapes base path
+	if strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("symlink target escapes base path: %s -> %s", linkPath, target)
+	}
+
+	return nil
 }
