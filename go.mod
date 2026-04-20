@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/duke-git/lancet/v2 v2.3.9
 	github.com/fatih/color v1.19.0
-	github.com/gdamore/tcell/v2 v2.13.8
+	github.com/gdamore/tcell/v2 v2.13.9
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/jedib0t/go-pretty/v6 v6.7.9
