@@ -182,3 +182,64 @@ func TestDownload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(testContent)), fi.Size())
 }
+
+func TestClient_ResourceCleanup(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("response"))
+	}))
+	defer server.Close()
+
+	client := NewClient(5*time.Second, 0)
+	req, _ := http.NewRequest("GET", server.URL, nil)
+
+	resp, err := client.Do(context.Background(), req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, "response", string(data))
+}
+
+func TestClient_RetryOnTemporaryError(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+	}))
+	defer server.Close()
+
+	client := NewClient(5*time.Second, 3)
+	req, _ := http.NewRequest("GET", server.URL, nil)
+
+	resp, err := client.Do(context.Background(), req)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, attempts)
+	defer resp.Body.Close()
+}
+
+func TestClient_DownloadToFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("download content"))
+	}))
+	defer server.Close()
+
+	client := NewClient(5*time.Second, 0)
+	tempFile := os.TempDir() + "/test-download.txt"
+	defer os.Remove(tempFile)
+
+	err := client.DownloadToFile(context.Background(), server.URL, tempFile)
+	assert.NoError(t, err)
+
+	content, err := os.ReadFile(tempFile)
+	assert.NoError(t, err)
+	assert.Equal(t, "download content", string(content))
+}
