@@ -12,7 +12,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/rivo/tview v0.42.0
-	github.com/schollz/progressbar/v3 v3.19.0
+	github.com/schollz/progressbar/v3 v3.19.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -29,12 +29,12 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	golang.org/x/exp v0.0.0-20221208152030-732eee02a75a // indirect
 	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
 )
