@@ -27,7 +27,7 @@ jobs:
           cache: false
 
       - name: "Checkout ${{ github.ref }}"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install tools
         run: |
@@ -51,7 +51,7 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - name: "Checkout ${{ github.ref }}"
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
