@@ -24,7 +24,7 @@ tools.install: $(addprefix tools.install., $(TOOLS))
 .PHONY: tools.install.%
 tools.install.%:
 	@echo "===========> Installing $*"
-	@$(MAKE) install.$*
+	@$(MAKE) install.$(subst local.,,$*)
 
 .PHONY: tools.verify.%
 tools.verify.%:
@@ -32,7 +32,7 @@ tools.verify.%:
 
 .PHONY: tools.verify.local.%
 tools.verify.local.%:
-	@if ! which $(BIN_DIR)/$* &>/dev/null; then $(MAKE) tools.install.$*; fi
+	@if [ ! -f "$(BIN_DIR)/$*" ]; then $(MAKE) install.$*; fi
 
 .PHONY: install.golangci-lint
 install.golangci-lint:
