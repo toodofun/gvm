@@ -135,7 +135,7 @@ make release
 
 ## 💕&nbsp; Star 历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=toodofun/gvm&type=Date)](https://star-history.com/#toodofun/gvm)
+[![Star History Chart](https://star-history.dera.page/svg?repos=toodofun/gvm&type=Date)](https://star-history.dera.page/#toodofun/gvm)
 
 ## 📘&nbsp; 许可证
 
