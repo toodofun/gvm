@@ -29,12 +29,12 @@ import (
 	"github.com/toodofun/gvm/internal/util/env"
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/internal/util/slice"
+	"github.com/toodofun/gvm/languages"
+	langenv "github.com/toodofun/gvm/languages/env"
 
 	"os"
 	"runtime"
 	"strings"
-
-	"github.com/toodofun/gvm/languages"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -121,10 +121,16 @@ func (n *Node) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVers
 }
 
 func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
-	binPath := filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node", "bin")
+	installPath := filepath.Join(path.GetLangRoot(n.Name()), path.Current)
+
+	// Get critical environment variables from env package
+	nodeEnvVars := langenv.GetNodeEnvVars(installPath)
+
+	binPath := filepath.Join(installPath, "node", "bin")
 	if runtime.GOOS == "windows" {
-		binPath = filepath.Join(path.GetLangRoot(n.Name()), path.Current, "node")
+		binPath = filepath.Join(installPath, "node")
 	}
+
 	envs := []env.KV{
 		{
 			Key:    "PATH",
@@ -132,6 +138,23 @@ func (n *Node) SetDefaultVersion(ctx context.Context, version string) error {
 			Append: true,
 		},
 	}
+
+	// Add NODE_PATH
+	if nodePath, ok := nodeEnvVars["NODE_PATH"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "NODE_PATH",
+			Value: nodePath,
+		})
+	}
+
+	// Add NPM_CONFIG_PREFIX (P1 critical)
+	if npmPrefix, ok := nodeEnvVars["NPM_CONFIG_PREFIX"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "NPM_CONFIG_PREFIX",
+			Value: npmPrefix,
+		})
+	}
+
 	return languages.NewLanguage(n).SetDefaultVersion(ctx, version, envs)
 }
 

@@ -33,6 +33,7 @@ import (
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/internal/util/slice"
 	"github.com/toodofun/gvm/languages"
+	langenv "github.com/toodofun/gvm/languages/env"
 
 	goversion "github.com/hashicorp/go-version"
 )
@@ -106,21 +107,18 @@ func (g *Golang) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
+	installPath := filepath.Join(path.GetLangRoot(g.Name()), path.Current)
 	gopath := filepath.Join(path.GetLangRoot(g.Name()), "gopath")
 	_ = os.MkdirAll(gopath, os.ModePerm)
+
+	// Get critical environment variables from env package
+	golangEnvVars := langenv.GetGolangEnvVars(installPath, gopath)
+
 	envs := []env.KV{
 		{
 			Key:    "PATH",
-			Value:  filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go", "bin"),
+			Value:  filepath.Join(installPath, "go", "bin"),
 			Append: true,
-		},
-		{
-			Key:   "GOROOT",
-			Value: filepath.Join(path.GetLangRoot(g.Name()), path.Current, "go"),
-		},
-		{
-			Key:   "GOPATH",
-			Value: gopath,
 		},
 		{
 			Key:    "PATH",
@@ -128,6 +126,39 @@ func (g *Golang) SetDefaultVersion(ctx context.Context, version string) error {
 			Append: true,
 		},
 	}
+
+	// Add GOROOT
+	if goroot, ok := golangEnvVars["GOROOT"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "GOROOT",
+			Value: goroot,
+		})
+	}
+
+	// Add GOPATH
+	if goPath, ok := golangEnvVars["GOPATH"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "GOPATH",
+			Value: goPath,
+		})
+	}
+
+	// Add GO111MODULE (P1 critical - was missing)
+	if go111module, ok := golangEnvVars["GO111MODULE"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "GO111MODULE",
+			Value: go111module,
+		})
+	}
+
+	// Add GOBIN
+	if gobin, ok := golangEnvVars["GOBIN"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "GOBIN",
+			Value: gobin,
+		})
+	}
+
 	return languages.NewLanguage(g).SetDefaultVersion(ctx, version, envs)
 }
 

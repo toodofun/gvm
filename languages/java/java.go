@@ -29,6 +29,7 @@ import (
 	"github.com/toodofun/gvm/internal/util/env"
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/languages"
+	langenv "github.com/toodofun/gvm/languages/env"
 )
 
 const (
@@ -69,13 +70,35 @@ func (j *Java) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVers
 }
 
 func (j *Java) SetDefaultVersion(ctx context.Context, version string) error {
+	installPath := filepath.Join(path.GetLangRoot(lang), path.Current)
+
+	// Get critical environment variables from env package
+	javaEnvVars := langenv.GetJavaEnvVars(installPath)
+
 	envs := []env.KV{
 		{
 			Key:    "PATH",
-			Value:  filepath.Join(path.GetLangRoot(lang), path.Current, "bin"),
+			Value:  filepath.Join(installPath, "bin"),
 			Append: true,
 		},
 	}
+
+	// Add JAVA_HOME (P0 critical - was completely missing)
+	if javaHome, ok := javaEnvVars["JAVA_HOME"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "JAVA_HOME",
+			Value: javaHome,
+		})
+	}
+
+	// Add CLASSPATH
+	if classpath, ok := javaEnvVars["CLASSPATH"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "CLASSPATH",
+			Value: classpath,
+		})
+	}
+
 	return languages.NewLanguage(j).SetDefaultVersion(ctx, version, envs)
 }
 
