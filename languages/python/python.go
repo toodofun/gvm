@@ -32,6 +32,7 @@ import (
 	"github.com/toodofun/gvm/internal/util/env"
 	"github.com/toodofun/gvm/internal/util/path"
 	"github.com/toodofun/gvm/languages"
+	langenv "github.com/toodofun/gvm/languages/env"
 
 	"os/exec"
 	"runtime"
@@ -227,22 +228,68 @@ func (p *Python) ListInstalledVersions(ctx context.Context) ([]*core.InstalledVe
 }
 
 func (p *Python) SetDefaultVersion(ctx context.Context, version string) error {
+	installPath := filepath.Join(path.GetLangRoot(p.Name()), path.Current)
+
+	// Get critical environment variables from env package
+	pythonEnvVars := langenv.GetPythonEnvVars(installPath)
+
 	envs := []env.KV{
 		{
 			Key:    "PATH",
-			Value:  filepath.Join(path.GetLangRoot(p.Name()), path.Current, "bin"),
-			Append: true,
-		},
-		//{
-		//	Key:   "PYTHONHOME",
-		//	Value: filepath.Join(path.GetLangRoot(p.Name()), path.Current),
-		//},
-		{
-			Key:    "LD_LIBRARY_PATH",
-			Value:  filepath.Join(path.GetLangRoot(p.Name()), path.Current, "lib"),
+			Value:  filepath.Join(installPath, "bin"),
 			Append: true,
 		},
 	}
+
+	// Add PYTHONHOME (P0 critical - was commented out)
+	if pythonhome, ok := pythonEnvVars["PYTHONHOME"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "PYTHONHOME",
+			Value: pythonhome,
+		})
+	}
+
+	// Add PYTHONPATH
+	if pythonpath, ok := pythonEnvVars["PYTHONPATH"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "PYTHONPATH",
+			Value: pythonpath,
+		})
+	}
+
+	// Add PYTHONDONTWRITEBYTECODE
+	if dontwrite, ok := pythonEnvVars["PYTHONDONTWRITEBYTECODE"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "PYTHONDONTWRITEBYTECODE",
+			Value: dontwrite,
+		})
+	}
+
+	// Add PYTHONUNBUFFERED
+	if unbuffered, ok := pythonEnvVars["PYTHONUNBUFFERED"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "PYTHONUNBUFFERED",
+			Value: unbuffered,
+		})
+	}
+
+	// Add PYTHONIOENCODING
+	if ioencoding, ok := pythonEnvVars["PYTHONIOENCODING"]; ok {
+		envs = append(envs, env.KV{
+			Key:   "PYTHONIOENCODING",
+			Value: ioencoding,
+		})
+	}
+
+	// Add LD_LIBRARY_PATH (platform-specific)
+	{
+		envs = append(envs, env.KV{
+			Key:    "LD_LIBRARY_PATH",
+			Value:  filepath.Join(installPath, "lib"),
+			Append: true,
+		})
+	}
+
 	return languages.NewLanguage(p).SetDefaultVersion(ctx, version, envs)
 }
 
